@@ -53,11 +53,40 @@
 
         <div class="container">
             <div class="mb-3">
-                <label for="fileZoomCSV" class="form-label">Default file input example</label>
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#clearDataModal">
+                    Clear all local data
+                </button>
+            </div>
+            <div class="mb-3">
+                <label for="fileZoomCSV" class="form-label">Upload one or more Zoom attendance CSV files.</label>
                 <input class="form-control" type="file" id="fileZoomCSV" multiple>
+            </div>
+            <div class="mb-3">
+                <h2>Meetings</h2>
+                <div id="meetingList" class="container"></div>
             </div>
         </div>
 
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="clearDataModal" tabindex="-1" aria-labelledby="clearDataModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="clearDataModalLabel">Are you sure you want to clear all local data?</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    This will remove any data or settings that you have accumulated. You will have to upload your
+                    attendance reports and re-do all configuration settings.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="clearData()">Confirm</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- code -->
@@ -76,6 +105,11 @@
             localStorage.setItem(key, buf);
         }
 
+        function clearData(){
+            localStorage.clear();
+            $('#clearDataModal').modal('hide');
+        }
+
         window.addEventListener("load", (event) => {
             students = localStorage.getItem("students");
             if (students == null) {
@@ -83,12 +117,41 @@
                 saveObj("students", students);
             }
 
-            meetings = localStorage.getItem("meetings");
-            if (meetings == null) {
+            meetingsData = localStorage.getItem("meetings");
+            if (meetingsData == null) {
                 meetings = {};
                 saveObj("meetings", meetings);
+            } else {
+                meetings = JSON.parse(meetingsData);
+                populateMeetings();
             }
+
         });
+
+        function extractDateString(){
+            var dt = DateTime.fromFormat()
+        }
+
+        function populateMeetings() {
+            $('#meetingList').empty();
+            var ids = Object.keys(meetings);
+            for (var i = 0; i < ids.length; i++) {
+                var meeting = meetings[ids[i]];
+                var name = meeting.topic;
+                var dt = DateTime.fromFormat(meeting.startTime, CSV_DATE_FORMAT)
+                var date = dt.toLocaleString(DateTime.DATE_SHORT);
+                var start = dt.toLocaleString(DateTime.TIME_SIMPLE);
+
+                dt = DateTime.fromFormat(meeting.endTime, CSV_DATE_FORMAT);
+                var end = dt.toLocaleString(DateTime.TIME_SIMPLE);
+
+                var duration = meeting.duration;
+
+                var div = `<div class="row">${name} ${date} ${start} ${end} ${duration}m</div>`;
+
+                $('#meetingList').append(div);
+            }
+        }
 
         const fileInput = document.getElementById("fileZoomCSV");
         fileInput.addEventListener("change", () => {
@@ -96,36 +159,45 @@
             processFiles(files);
         });
 
-        function processRecords(records){
-            for( var i=0;i<records.length; i++){
+        function processRecords(records) {
+            for (var i = 0; i < records.length; i++) {
                 var topic = records[i].Topic;
-                if( topic != null ) {
-                    if( typeof meetings[topic] == 'undefined' ){
+                if (topic != null) {
+                    if (typeof meetings[topic] == 'undefined') {
                         // then add it
-                        var startTime = DateTime.fromFormat(records[i]["Start time"], CSV_DATE_FORMAT);
-                        var endTime = DateTime.fromFormat(records[i]["End time"], CSV_DATE_FORMAT);
-                        console.log( records[i]["Start time"] + " -> " + startTime.toFormat(JSON_DATE_FORMAT) );
+                        var meeting = {
+                            "id": records[i]["ID"],
+                            "topic": records[i]["Topic"],
+                            "startTime": records[i]["Start time"],
+                            "endTime": records[i]["End time"],
+                            "duration": records[i]["Duration (minutes)"],
+                            "participants": records[i]["Participants"]
+                        }
+                        meetings[records[i]["ID"]] = meeting;
                     }
                     var email = records[i].Email;
                     var joined = records[i]["Join time"];
                     var left = records[i]["Leave time"];
+                    var duration = records[i]["Duration (minutes)_1"];
                     // console.log( `${topic} ${email} ${joined} ${left}`)
                 }
 
             }
+            saveObj("meetings", meetings);
+            console.log(JSON.stringify(meetings));
             saveObj("records", records);
         }
 
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const fileContent = event.target.result; // Get the file content
+            var records = Papa.parse(fileContent, { "dynamicTyping": true, "header": true });
+            var record = records.data[0];
+            processRecords(records.data);
+        };
+
         function processFiles(files) {
             for (const file of files) {
-                const reader = new FileReader();
-
-                reader.onload = (event) => {
-                    const fileContent = event.target.result; // Get the file content
-                    var records = Papa.parse(fileContent, { "dynamicTyping": true, "header": true });
-                    processRecords(records.data);
-                };
-
                 reader.readAsText(file); // Read the file as text (or use readAsDataURL for images)
             }
         }
