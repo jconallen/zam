@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.5.3/papaparse.min.js"
+        integrity="sha256-NVP7i99bgATOVTHmgn6ByLNOezmSZ3lndUVEBk6XsBY=" crossorigin="anonymous"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.7.2/build/global/luxon.min.js"
+        integrity="sha256-UWxf6lyCvfH7XEcrmq/cqc2m3IBrLBLOnWLC4Pw0gQQ=" crossorigin="anonymous"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q"
+        crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+
+</head>
+
+<body>
+    <div id="navbar"></div>
+
+    <div class="container">
+        <h1>Students</h1>
+
+        <div id="studentList" class="container">
+
+        </div>
+
+    </div>
+
+    <!-- code -->
+
+    <script type="text/javascript">
+
+        $(function () {
+            $("#navbar").load("navbar.html");
+        });
+
+        var DateTime = luxon.DateTime;
+        const CSV_DATE_FORMAT = "LL/dd/yyyy hh:mm:ss a";
+        const JSON_DATE_FORMAT = "LL/dd/yyyy HH:mm";
+
+        var students = null;
+        var meetings = null;
+
+        window.addEventListener("load", (event) => {
+
+            studentsBuf = localStorage.getItem("students");
+            if (studentsBuf == null) {
+                students = {};
+                saveObj("students", students);
+            } else {
+                try {
+                    students = JSON.parse(studentsBuf);
+                } catch (err) {
+                    alert(err);
+                }
+            }
+
+            meetingsData = localStorage.getItem("meetings");
+            if (meetingsData == null) {
+                meetings = {};
+                saveObj("meetings", meetings);
+            } else {
+                try {
+                    meetings = JSON.parse(meetingsData);
+                } catch (err) {
+                    alert(err);
+                }
+            }
+
+            populateStudents();
+
+        });
+
+        function populateStudents() {
+            // $('#studentPre').text( JSON.stringify(students,null,4));
+            // $('#studentList').empty();
+            for (var i = 0; i < students.length; i++) {
+                var student = students[i];
+                if( student.email != null ) {
+                    // email can be null if this is a personal meeting or not one 
+                    // that requires a school email account 
+                    appendStudent(student,i);
+                }
+            }
+        }
+
+        function appendStudent(student, index) {
+            var attendance = student.attendance;
+            var detailsDiv = `<div class="card card-body">`;
+            for( var i=0;i<attendance.length;i++){
+                var dt = DateTime.fromFormat(attendance[i].joined, CSV_DATE_FORMAT);
+                var date = dt.toLocaleString(DateTime.DATE_SHORT);
+                var joined = dt.toLocaleString(DateTime.TIME_SIMPLE);
+                dt = DateTime.fromFormat(attendance[i].left, CSV_DATE_FORMAT);
+                var left = dt.toLocaleString(DateTime.TIME_SIMPLE);
+                var duration = attendance[i].duration;
+                // meeting info
+                var meetingStart = attendance[i].meetingStart;
+                var meetingDuration = attendance[i].meetingDuration;
+                var percentage = Math.round( 100 * duration / meetingDuration);
+                detailsDiv += `<div class="row">${date} ${joined} ${left} ${duration}m - meeting: ${meetingStart} ${meetingDuration}m, ${percentage}%</div>`;
+            }
+            detailsDiv += '</div>';
+            var div = `<div class="row"><span id="C${index}" class="bi bi-chevron-compact-down" onclick="toggleStudent('${index}')"> &nbsp; ${student.name}</span></div>
+            <div class="collapse hide" id="S${index}">
+                <div class="card card-body">
+                    ${detailsDiv}
+                </div>`;
+            $('#studentList').append(div);
+        }
+
+        function toggleStudent(index) {
+            $("#S" + index).collapse("toggle");
+            //update chevron
+            var chevronClass = $("#C"+index).attr("class");
+            if( chevronClass.includes('bi-chevron-compact-up') ){
+                $("#C"+index).removeClass('bi-chevron-compact-up');
+                $("#C"+index).addClass('bi-chevron-compact-down');
+            } else {
+                $("#C"+index).removeClass('bi-chevron-compact-down');
+                $("#C"+index).addClass('bi-chevron-compact-up');
+            }
+        }
+
+    </script>
+</body>
+
+</html>

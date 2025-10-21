@@ -22,32 +22,7 @@
 </head>
 
 <body>
-    <div style="margin-left: 5px;margin-right: 5px;">
-        <nav class="navbar navbar-expand-lg navbar-light bg-light">
-            <a class="navbar-brand" href="#">Zoom Attendance Manager</a>
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
-                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="index.html">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="data.html">Data</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="settings.html">Settings</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="about.html">About</a>
-                    </li>
-                </ul>
-            </div>
-        </nav>
-    </div>
-
+    <div id="navbar"></div>
     <div class="container">
         <h1>Data</h1>
 
@@ -62,7 +37,7 @@
                 <input class="form-control" type="file" id="fileZoomCSV" multiple>
             </div>
             <div class="mb-3">
-                <h2>Courses</h2>
+                <h2>Meetings</h2>
                 <div id="meetingList" class="container"></div>
             </div>
         </div>
@@ -93,6 +68,10 @@
 
     <script type="text/javascript">
 
+        $(function () {
+            $("#navbar").load("navbar.html");
+        });
+
         var DateTime = luxon.DateTime;
         const CSV_DATE_FORMAT = "LL/dd/yyyy hh:mm:ss a";
         const JSON_DATE_FORMAT = "LL/dd/yyyy HH:mm";
@@ -108,15 +87,16 @@
         function clearData() {
             $('#clearDataModal').modal('hide');
             localStorage.clear();
-            students = {};
+            students = [];
             meetings = {};
             $('#meetingList').empty();
         }
 
         window.addEventListener("load", (event) => {
+
             students = localStorage.getItem("students");
             if (students == null) {
-                students = {};
+                students = [];
                 saveObj("students", students);
             }
 
@@ -140,6 +120,12 @@
                 var aTime = DateTime.fromFormat(a, CSV_DATE_FORMAT);
                 var bTime = DateTime.fromFormat(b, CSV_DATE_FORMAT);
                 return aTime.diff(bTime, 'minutes');
+            });
+        }
+
+        function sortStudents(studentArray) {
+            return studentArray.sort(function (a, b) {
+                return a.name.localeCompare(b.name)
             });
         }
 
@@ -171,8 +157,6 @@
 
                     $('#meetingList').append(div);
                 }
-
-
             }
         }
 
@@ -183,81 +167,98 @@
         });
 
         function processRecords(records) {
-            return new Promise( (resolve, reject) => {
-                for (var i = 0; i < records.length; i++) {
-                    var topic = records[i].Topic;
-                    if (topic != null) {
-                        var meetingId = records[i].ID;
-                        var meeting = meetings[meetingId];
-                        if (typeof meetings[meetingId] == 'undefined') {
-                            // then add it
-                            meeting = {
-                                "id": records[i]["ID"],
-                                "topic": records[i]["Topic"],
-                                "ignore": false,
-                                "instances": {}
-                            }
-                            meetings[meetingId] = meeting;
+
+            for (var i = 0; i < records.length; i++) {
+                var topic = records[i].Topic;
+                if (topic != null) {
+                    // not a blank line in the csv
+                    var meetingId = records[i].ID;
+                    var meeting = meetings[meetingId];
+                    if (typeof meetings[meetingId] == 'undefined') {
+                        // then add it
+                        meeting = {
+                            "id": records[i]["ID"],
+                            "topic": records[i]["Topic"],
+                            "ignore": false,
+                            "instances": {}
                         }
-
-                        // now add the instance
-                        var meetingInstance = {
-                            "startTime": records[i]["Start time"],
-                            "endTime": records[i]["End time"],
-                            "duration": records[i]["Duration (minutes)"],
-                            "participants": records[i]["Participants"],
-                        }
-
-                        if (!meeting.instances[meetingInstance.startTime]) {
-                            meeting.instances[meetingInstance.startTime] = meetingInstance;
-                        }
-
-                        // now process student info
-
-                        var email = records[i].Email;
-                        var joined = records[i]["Join time"];
-                        var left = records[i]["Leave time"];
-                        var duration = records[i]["Duration (minutes)_1"];
-
-                        if (!students[email]) {
-                            // initialize
-                            students[email] = {
-                                "name": records[i]["Name (original name)"],
-                                "attendance": []
-                            }
-                        }
-
-                        students[email].attendance.push({
-                            "joined": joined,
-                            "left": left,
-                            "duration": duration
-                        });
-
+                        meetings[meetingId] = meeting;
                     }
 
-                    populateMeetings();
+                    // now add the instance
+                    var meetingInstance = {
+                        "startTime": records[i]["Start time"],
+                        "endTime": records[i]["End time"],
+                        "duration": records[i]["Duration (minutes)"],
+                        "participants": records[i]["Participants"],
+                    }
+
+                    if (!meeting.instances[meetingInstance.startTime]) {
+                        meeting.instances[meetingInstance.startTime] = meetingInstance;
+                    }
+
+
+
+                    // now process student info
+
+                    var email = records[i].Email;
+                    var joined = records[i]["Join time"];
+                    var left = records[i]["Leave time"];duration
+                    var duration = records[i]["Duration (minutes)_1"];
+
+                    var index = students.findIndex(student => student.email == email);
+                    if (index < 0) {
+                        // initialize
+                        students.push({
+                            "name": records[i]["Name (original name)"],
+                            "email": email,
+                            "attendance": []
+                        });
+                        index = students.length-1;
+                    }
+
+                    var record = {
+                        "joined": joined,
+                        "left": left,
+                        "duration": duration,
+                        "meetingId": meetingId,
+                        "meetingStart": meetingInstance.startTime,
+                        "meetingDuration": meetingInstance.duration
+                    };
+                    students[index].attendance.push(record);
 
                 }
-                saveObj("meetings", meetings);
-                saveObj("students", students);
-                resolve();
-            })
+            }
+
+            populateMeetings();
+            
+            saveObj("meetings", meetings);
+
+            students = sortStudents(students) ;
+            saveObj("students", students);
+
         }
 
-        const reader = new FileReader();
-        reader.onload = async (event) => {
-            const fileContent = event.target.result; // Get the file content
-            var records = Papa.parse(fileContent, { "dynamicTyping": true, "header": true });
-            var record = records.data[0];
-            await processRecords(records.data);
-        };
-        reader.onerror = function () {
-            console.error("Error reading file");
-        };
+
 
         function processFiles(files) {
             for (const file of files) {
                 console.log("Reading file: " + file.name);
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    const fileContent = event.target.result; // Get the file content
+                    var records = Papa.parse(fileContent, { "dynamicTyping": true, "header": true });
+                    if (records.meta.fields.length == 25) {
+                        // TODO: validate names 
+                        processRecords(records.data);
+
+                    } else {
+                        alert("Error parsing input file: " + file.name);
+                    }
+                };
+                reader.onerror = function () {
+                    console.error("Error reading file");
+                };
                 reader.readAsText(file); // Read the file as text (or use readAsDataURL for images)
             }
         }
