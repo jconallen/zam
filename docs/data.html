@@ -62,7 +62,7 @@
                 <input class="form-control" type="file" id="fileZoomCSV" multiple>
             </div>
             <div class="mb-3">
-                <h2>Meetings</h2>
+                <h2>Courses</h2>
                 <div id="meetingList" class="container"></div>
             </div>
         </div>
@@ -105,9 +105,12 @@
             localStorage.setItem(key, buf);
         }
 
-        function clearData(){
-            localStorage.clear();
+        function clearData() {
             $('#clearDataModal').modal('hide');
+            localStorage.clear();
+            students = {};
+            meetings = {};
+            $('#meetingList').empty();
         }
 
         window.addEventListener("load", (event) => {
@@ -128,8 +131,16 @@
 
         });
 
-        function extractDateString(){
+        function extractDateString() {
             var dt = DateTime.fromFormat()
+        }
+
+        function sortInstances(instances) {
+            return instances.sort(function (a, b) {
+                var aTime = DateTime.fromFormat(a, CSV_DATE_FORMAT);
+                var bTime = DateTime.fromFormat(b, CSV_DATE_FORMAT);
+                return aTime.diff(bTime, 'minutes');
+            });
         }
 
         function populateMeetings() {
@@ -138,18 +149,30 @@
             for (var i = 0; i < ids.length; i++) {
                 var meeting = meetings[ids[i]];
                 var name = meeting.topic;
-                var dt = DateTime.fromFormat(meeting.startTime, CSV_DATE_FORMAT)
-                var date = dt.toLocaleString(DateTime.DATE_SHORT);
-                var start = dt.toLocaleString(DateTime.TIME_SIMPLE);
 
-                dt = DateTime.fromFormat(meeting.endTime, CSV_DATE_FORMAT);
-                var end = dt.toLocaleString(DateTime.TIME_SIMPLE);
-
-                var duration = meeting.duration;
-
-                var div = `<div class="row">${name} ${date} ${start} ${end} ${duration}m</div>`;
-
+                var div = `<div class="row">${name}</div>`;
                 $('#meetingList').append(div);
+
+                var instanceTimes = sortInstances(Object.keys(meeting.instances));
+                for (var j = 0; j < instanceTimes.length; j++) {
+                    var startTime = instanceTimes[j];
+                    var dt = DateTime.fromFormat(startTime, CSV_DATE_FORMAT);
+                    var date = dt.toLocaleString(DateTime.DATE_SHORT);
+                    var start = dt.toLocaleString(DateTime.TIME_SIMPLE);
+
+                    var instance = meeting.instances[startTime];
+                    var endTime = instance["endTime"];
+                    dt = DateTime.fromFormat(endTime, CSV_DATE_FORMAT);
+                    var end = dt.toLocaleString(DateTime.TIME_SIMPLE);
+                    var duration = instance["duration"];
+                    var participants = instance["participants"];
+
+                    var div = `<div class="row"><div class="col-1"></div><div class="col-10">${date} ${start} ${end} ${duration}m ${participants}</div></div>`;
+
+                    $('#meetingList').append(div);
+                }
+
+
             }
         }
 
@@ -160,44 +183,81 @@
         });
 
         function processRecords(records) {
-            for (var i = 0; i < records.length; i++) {
-                var topic = records[i].Topic;
-                if (topic != null) {
-                    if (typeof meetings[topic] == 'undefined') {
-                        // then add it
-                        var meeting = {
-                            "id": records[i]["ID"],
-                            "topic": records[i]["Topic"],
+            return new Promise( (resolve, reject) => {
+                for (var i = 0; i < records.length; i++) {
+                    var topic = records[i].Topic;
+                    if (topic != null) {
+                        var meetingId = records[i].ID;
+                        var meeting = meetings[meetingId];
+                        if (typeof meetings[meetingId] == 'undefined') {
+                            // then add it
+                            meeting = {
+                                "id": records[i]["ID"],
+                                "topic": records[i]["Topic"],
+                                "ignore": false,
+                                "instances": {}
+                            }
+                            meetings[meetingId] = meeting;
+                        }
+
+                        // now add the instance
+                        var meetingInstance = {
                             "startTime": records[i]["Start time"],
                             "endTime": records[i]["End time"],
                             "duration": records[i]["Duration (minutes)"],
-                            "participants": records[i]["Participants"]
+                            "participants": records[i]["Participants"],
                         }
-                        meetings[records[i]["ID"]] = meeting;
-                    }
-                    var email = records[i].Email;
-                    var joined = records[i]["Join time"];
-                    var left = records[i]["Leave time"];
-                    var duration = records[i]["Duration (minutes)_1"];
-                    // console.log( `${topic} ${email} ${joined} ${left}`)
-                }
 
-            }
-            saveObj("meetings", meetings);
-            console.log(JSON.stringify(meetings));
-            saveObj("records", records);
+                        if (!meeting.instances[meetingInstance.startTime]) {
+                            meeting.instances[meetingInstance.startTime] = meetingInstance;
+                        }
+
+                        // now process student info
+
+                        var email = records[i].Email;
+                        var joined = records[i]["Join time"];
+                        var left = records[i]["Leave time"];
+                        var duration = records[i]["Duration (minutes)_1"];
+
+                        if (!students[email]) {
+                            // initialize
+                            students[email] = {
+                                "name": records[i]["Name (original name)"],
+                                "attendance": []
+                            }
+                        }
+
+                        students[email].attendance.push({
+                            "joined": joined,
+                            "left": left,
+                            "duration": duration
+                        });
+
+                    }
+
+                    populateMeetings();
+
+                }
+                saveObj("meetings", meetings);
+                saveObj("students", students);
+                resolve();
+            })
         }
 
         const reader = new FileReader();
-        reader.onload = (event) => {
+        reader.onload = async (event) => {
             const fileContent = event.target.result; // Get the file content
             var records = Papa.parse(fileContent, { "dynamicTyping": true, "header": true });
             var record = records.data[0];
-            processRecords(records.data);
+            await processRecords(records.data);
+        };
+        reader.onerror = function () {
+            console.error("Error reading file");
         };
 
         function processFiles(files) {
             for (const file of files) {
+                console.log("Reading file: " + file.name);
                 reader.readAsText(file); // Read the file as text (or use readAsDataURL for images)
             }
         }
