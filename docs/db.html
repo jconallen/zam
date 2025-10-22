@@ -11,6 +11,8 @@
     <script src="https://cdn.jsdelivr.net/npm/luxon@3.7.2/build/global/luxon.min.js"
         integrity="sha256-UWxf6lyCvfH7XEcrmq/cqc2m3IBrLBLOnWLC4Pw0gQQ=" crossorigin="anonymous"></script>
 
+    <script src="https://cdn.jsdelivr.net/npm/idb@8.0.3/build/umd.min.js"></script>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"
@@ -28,101 +30,94 @@
 
         <div class="container">
             <div class="mb-3">
-                <label for="exampleFormControlInput1" class="form-label">Email address</label>
-                <input type="email" class="form-control" id="exampleFormControlInput1" placeholder="name@example.com">
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#clearDataModal">
+                    Clear all local data
+                </button>
             </div>
             <div class="mb-3">
-                <label for="exampleFormControlTextarea1" class="form-label">Example textarea</label>
-                <textarea class="form-control" id="exampleFormControlTextarea1" rows="3"></textarea>
+                <label for="fileZoomCSV" class="form-label">Upload one or more Zoom attendance CSV files.</label>
+                <input class="form-control" type="file" id="fileZoomCSV" multiple>
             </div>
             <div class="mb-3">
-                <button type="button" class="btn btn-primary" onclick="addUser()">Add User</button>
-                <button type="button" class="btn btn-secondary" onclick="getUsers()">Get Users</button>
+                <h2>Meetings</h2>
+                <div id="meetingList" class="container"></div>
             </div>
         </div>
 
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="clearDataModal" tabindex="-1" aria-labelledby="clearDataModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="clearDataModalLabel">Are you sure you want to clear all local data?</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    This will remove any data or settings that you have accumulated. You will have to upload your
+                    attendance reports and re-do all configuration settings.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="clearData()">Confirm</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- code -->
 
     <script type="text/javascript">
 
-        window.addEventListener("load", (event) => {
+        const dbName = "Attendance";
+        const dbVersion = 1; // Versioning is required for schema updates.
+        const db = run();
 
-            const dbName = "MyDatabase";
-            const dbVersion = 1; // Versioning is required for schema updates.
+        async function run(){
+            try{
+                const db = await initDb();
+                await addRecord('meetings', meeting);
+            } catch( err ) {
+                console.error( err );
+            }
+           return db;
+        }
+    
+        var meeting = {
+            "meetingId": "996 9076 0374",
+            "topic": "CS 100 Introduction to Information Technology 1803"    
+        };
 
-            const request = indexedDB.open(dbName, dbVersion);
+        async function initDb(){
+            const db = await idb.openDB(dbName, dbVersion, {
+                upgrade(db) {
+                db.createObjectStore('meetings', { keyPath: 'id' });
+                // store.createIndex('email', 'email', { unique: true });
+                },
+            });
+            return db;
+        }
 
-            request.onupgradeneeded = function (event) {
-                const db = event.target.result;
+        async function addRecord(storeName, data) {
+            const tx = await db.transaction(storeName, 'readwrite');
+            const store = tx.objectStore(storeName);
+            await store.add(data);
+            await tx.done;
+        }
 
-                // Create an object store named 'users' with 'id' as the keyPath
-                if (!db.objectStoreNames.contains("users")) {
-                    db.createObjectStore("users", { keyPath: "id", autoIncrement: true });
-                }
-                console.log("Database setup complete");
-            };
 
-            request.onsuccess = function (event) {
-                const db = event.target.result;
-                console.log("Database opened successfully");
-            };
+        
 
-            request.onerror = function (event) {
-                console.error("Error opening database:", event.target.errorCode);
-            };
+        window.addEventListener("load", async (event) => {
 
         });
 
-        function addUser() {
-
-            var email = $('#exampleFormControlInput1').val();
-            var description = $('#exampleFormControlTextarea1').val();
-
-            const request = indexedDB.open("MyDatabase", 1);
-
-            request.onsuccess = function (event) {
-                const db = event.target.result;
-                const transaction = db.transaction("users", "readwrite");
-                const objectStore = transaction.objectStore("users");
-
-                const user = { email, description };
-                const addRequest = objectStore.add(user);
-
-                addRequest.onsuccess = function () {
-                    console.log("User added:", user);
-                };
-
-                addRequest.onerror = function (event) {
-                    console.error("Error adding user:", event.target.error.message);
-                };
-            };
-        }
-
-        function getUsers() {
-            const request = indexedDB.open("MyDatabase", 1);
-
-            request.onsuccess = function (event) {
-                const db = event.target.result;
-                const transaction = db.transaction("users", "readonly");
-                const objectStore = transaction.objectStore("users");
-
-                const getRequest = objectStore.getAll();
-
-                getRequest.onsuccess = function () {
-                    if (getRequest.result) {
-                        console.log("User found:", getRequest.result);
-                    } else {
-                        console.log("User not found");
-                    }
-                };
-
-                getRequest.onerror = function (event) {
-                    console.error("Error retrieving user:", event.target.errorCode);
-                };
-            };
-        }
+        const fileInput = document.getElementById("fileZoomCSV");
+        fileInput.addEventListener("change", () => {
+            const files = fileInput.files;
+            processFiles(files);
+        });
 
 
 
