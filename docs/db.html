@@ -81,7 +81,7 @@
 
         window.addEventListener("load", async (event) => {
             await initDb();
-            await buildMeetingDiv();
+            buildMeetingDiv();
         });
 
         function sortMeetings(meetings){
@@ -91,21 +91,31 @@
                 }
                 return a.ignore > b.ignore ? 1 : -1;
             });
+            return sortedMeetings;
         }
 
         async function buildMeetingDiv(){
-            var meetings = await getAll("meetings");
-            var sortedMeetings = sortMeetings(meetings);
-            for( var i=0;i<meetings.length; i++){
-                var meeting = meetings[i];
-                var icon = "bi-eye";
-                if( meeting.ignore ){
-                    icon = "bi-eye-slash"
-                }
-                var id = meeting.meetingId.replace(/\s+/g, '');
-                var div = `<div class="row"><span id="${id}" class="bi ${icon}" onclick="toggleVisibility('${meeting.meetingId}')">&nbsp;${meeting.topic}</span></div>`;
+            try{
+                var meetings = await getAll("meetings");
+                var sortedMeetings = sortMeetings(meetings);
+                for( var i=0;i<meetings.length; i++){
+                    var meeting = meetings[i];
+                    var icon = "bi-eye";
+                    if( meeting.ignore ){
+                        icon = "bi-eye-slash"
+                    }
+                    var id = meeting.meetingId.replace(/\s+/g, '');
+                    var encodedMeetingUrl = "/meeting.html?meetingId="+encodeURIComponent(meeting.meetingId);
+                    var div = 
+                    `<div class="row">
+                        <div class="col-1" style="width:15px;"><span id="${id}" class="bi ${icon}" onclick="toggleVisibility('${meeting.meetingId}')"></span></div>
+                        <div class="col-8"><a href="${encodedMeetingUrl}">${meeting.topic}</a></div>
+                    </div>`;
 
-                $('#meetingList').append(div);
+                    $('#meetingList').append(div);
+                }
+            } catch( err ) {
+                console.error( err );
             }
         }
 
@@ -128,13 +138,13 @@
         }
 
         const fileInput = document.getElementById("fileZoomCSV");
-        fileInput.addEventListener("change", () => {
+        fileInput.addEventListener("change", async () => {
             const files = fileInput.files;
             processFiles(files);
         });
 
         async function processRecord(record){
-            if( record.Topic != null && record["Email"] != null) { // not undefined
+            if( record != null && record.Topic != null && record["Email"] != null) { // not undefined
                 try{
                     var meetingId = record.ID;
                     var meeting;
@@ -156,9 +166,7 @@
                     var meetingStart = record["Start time"];
                     var meetingKey = [ meetingId, meetingStart ];
                     var instance = await getRecord( "meetingInstances", meetingKey );
-                    if( instance ) {
-                        console.log( JSON.stringify(instance) );
-                    } else {
+                    if( !instance ) {
                         // add the instance
                         var meetingInstance = {
                             "meetingId": meetingId,
@@ -185,9 +193,7 @@
                         // finally add attendance records
                         var joined = record["Join time"];
                         var attendance = await getRecord( "attendance", [ meetingId, meetingStart, joined] );
-                        if( attendance ) {
-                            console.log( JSON.stringify(attendance) );
-                        } else {
+                        if( !attendance ) {
                             // add the instance
                             var attendance = {
                                 "meetingId": meetingId,
@@ -200,21 +206,12 @@
                             await addRecord( 'attendance', attendance)
                         }
 
-                    }
-
-                    // now 
+                    } 
                 }catch( err ) {
                     console.error( err );
                 }
             }
 
-        }
-
-        async function processRecords(records){
-            return new Promise( async ( resolve, reject) => {
-                await async.eachSeries( records, processRecord );
-                resolve();
-            });
         }
 
         async function processFile(file){
@@ -223,12 +220,11 @@
                 const reader = new FileReader();
                 reader.onload = async (event) => {
                     const fileContent = event.target.result; // Get the file content
-                    var records = Papa.parse(fileContent, { "dynamicTyping": true, "header": true });
+                    var records = await Papa.parse(fileContent, { "dynamicTyping": true, "header": true });
                     if (records.meta.fields.length == 25) {
                         // TODO: validate names 
                         try{
-                            await async.eachSeries( records, processRecords );
-                            // await async.eachSeries( records, processRecord );
+                            await async.eachSeries( records.data, processRecord );
                             resolve();
                         } catch( err ) {
                             console.error( err );
@@ -250,7 +246,22 @@
         async function processFiles(files) {
             await async.eachSeries(files, processFile, function(err){
                 if( err ) console.error(err);
+                buildMeetingDiv();
             });
+        }
+
+        async function clearData(){
+            $('#clearDataModal').modal('hide');
+            try{
+                await clearDb();
+                $('#meetingList').empty();
+            } catch ( err ) {
+                console.error( err );
+            }
+        }
+
+        function navigateToMeetingDetails(meetingId){
+            window.location.href = '/meeting.html?meetingId=' + encodeURIComponent(meetingId);
         }
 
 

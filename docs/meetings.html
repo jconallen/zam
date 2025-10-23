@@ -64,14 +64,12 @@
             var sortedMeetings = sortMeetings(meetings);
             for( var i=0;i<meetings.length; i++){
                 var meeting = meetings[i];
-                var icon = "bi-eye";
-                if( meeting.ignore ){
-                    icon = "bi-eye-slash"
+                if( !meeting.ignore ){
+                    var id = meeting.meetingId.replace(/\s+/g, '');
+                    var encodedMeetingUrl = "/meeting.html?meetingId="+encodeURIComponent(meeting.meetingId);
+                    var div = `<div class="row"><a href="${encodedMeetingUrl}">${meeting.topic}</a></div>`;
+                    $('#meetingList').append(div);
                 }
-                var id = meeting.meetingId.replace(/\s+/g, '');
-                var div = `<div class="row"><span id="${id}" class="bi ${icon}" onclick="toggleVisibility('${meeting.meetingId}')">&nbsp;${meeting.topic}</span></div>`;
-
-                $('#meetingList').append(div);
             }
         }
 

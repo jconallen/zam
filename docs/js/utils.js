@@ -74,3 +74,37 @@ async function getAll(storeName){
     });
 }
 
+async function deleteStore(storeName){
+    return new Promise(async (resolve, reject) => {
+        try {
+            const tx = await db.transaction(storeName, 'readwrite');
+            const store = tx.objectStore(storeName);
+            await store.clear();
+            await tx.done;
+            console.log( "cleared store: "+storeName);
+            resolve();
+        } catch (err) {
+            console.error(err);
+            reject(err);
+        }
+    });
+}
+
+async function clearDb(){
+    return new Promise( async (resolve, reject) => {
+        try{
+            var stores = [ 'meetings','meetingInstances','students','attendance'];
+            await async.eachSeries( stores, deleteStore, function(err){
+                if( err ) {
+                    console.error(err);
+                    reject(err);
+                }
+                resolve();
+            });
+        }catch( err ) {
+            console.error(err);
+        }
+    });
+
+}
+

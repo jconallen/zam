@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.5.3/papaparse.min.js"
+        integrity="sha256-NVP7i99bgATOVTHmgn6ByLNOezmSZ3lndUVEBk6XsBY=" crossorigin="anonymous"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.7.2/build/global/luxon.min.js"
+        integrity="sha256-UWxf6lyCvfH7XEcrmq/cqc2m3IBrLBLOnWLC4Pw0gQQ=" crossorigin="anonymous"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/async@3.2.6/dist/async.min.js"
+        integrity="sha256-uDzWtmm1K/XBN81NsKQ3dxp0KF3jz7XPO8F3WAA0Whg=" crossorigin="anonymous"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/idb@8.0.3/build/umd.min.js"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q"
+        crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+
+</head>
+
+<body>
+    <div id="navbar"></div>
+
+    <div class="container">
+        <h1>Meeting:</h1>
+        <h2 id="topicName"></h2>
+
+        <div id="meetingInstanceList" class="container"></div>
+    </div>
+
+    <!-- code -->
+    <script src="js/utils.js"></script>
+
+    <script type="text/javascript">
+
+        $(function () {
+            $("#navbar").load("navbar.html");
+        });
+
+        var DateTime = luxon.DateTime;
+        const CSV_DATE_FORMAT = "LL/dd/yyyy hh:mm:ss a";
+        const JSON_DATE_FORMAT = "LL/dd/yyyy HH:mm";
+        
+        window.addEventListener("load", async (event) => {
+            await initDb();
+
+            const queryString = window.location.search; 
+            const urlParams = new URLSearchParams(queryString);
+            const meetingId = urlParams.get('meetingId'); 
+            buildMeetingDetailsDiv(meetingId);
+        });
+
+        function sortInstances(instances){
+            var sortedInstances = instances.sort((a, b) => {
+                var aStart = DateTime.fromFormat(a.start, CSV_DATE_FORMAT);
+                var bStart = DateTime.fromFormat(b.start, CSV_DATE_FORMAT);
+                return ( aStart.startOf("day") <= bStart.startOf("day") );
+            });
+            return sortedInstances;
+        }
+
+        async function buildMeetingDetailsDiv(meetingId){
+            var meeting = await getRecord('meetings', meetingId);
+            // too: get just instances for this meeting id
+            var instances = await getAll('meetingInstances');
+            var sortedInstances = sortInstances(instances);
+            var prevDate = null;
+            if( meeting ){
+                $('#topicName').text(meeting.topic);
+                for( var i=0; i<sortedInstances.length; i++){
+                    var instance = sortedInstances[i];
+                    if( instance.meetingId == meetingId){
+                    var startDate = DateTime.fromFormat(instance.start, CSV_DATE_FORMAT);
+                    var startDateSimple = startDate.toLocaleString(DateTime.DATE_SHORT);
+                    var startTimeSimple = startDate.toLocaleString(DateTime.TIME_SIMPLE);
+                    var endTime = DateTime.fromFormat(instance.end, CSV_DATE_FORMAT);
+                    var endTimeSimple = endTime.toLocaleString(DateTime.TIME_SIMPLE);
+                    if( startDateSimple == prevDate ){
+                        $('#meetingInstanceList').append( `<div class="row"><div class="col-1"></div><div class="col-8">${startTimeSimple} -> ${endTimeSimple}</div></div>` );
+                    } else {
+                        $('#meetingInstanceList').append( `<div class="row"><div class="col-1">${startDateSimple}</div><div class="col-8"></div></div>
+                                                            <div class="row"><div class="col-1"></div><div class="col-8">${startTimeSimple} -> ${endTimeSimple}</div></div>` );
+                        prevDate = startDateSimple;
+                    }
+                }
+
+                    
+                }
+            } else {
+                alert("unable to get meeting: " + meetingId);
+            }
+        }
+
+
+
+    </script>
+</body>
+
+</html>
