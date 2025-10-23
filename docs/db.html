@@ -11,6 +11,9 @@
     <script src="https://cdn.jsdelivr.net/npm/luxon@3.7.2/build/global/luxon.min.js"
         integrity="sha256-UWxf6lyCvfH7XEcrmq/cqc2m3IBrLBLOnWLC4Pw0gQQ=" crossorigin="anonymous"></script>
 
+    <script src="https://cdn.jsdelivr.net/npm/async@3.2.6/dist/async.min.js"
+        integrity="sha256-uDzWtmm1K/XBN81NsKQ3dxp0KF3jz7XPO8F3WAA0Whg=" crossorigin="anonymous"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/idb@8.0.3/build/umd.min.js"></script>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -40,6 +43,7 @@
             </div>
             <div class="mb-3">
                 <h2>Meetings</h2>
+                <button type="button" class="btn btn-primary" onclick="addMeeting()">Add</button>
                 <div id="meetingList" class="container"></div>
             </div>
         </div>
@@ -72,45 +76,48 @@
 
         const dbName = "Attendance";
         const dbVersion = 1; // Versioning is required for schema updates.
-        const db = run();
-
-        async function run(){
-            try{
-                const db = await initDb();
-                await addRecord('meetings', meeting);
-            } catch( err ) {
-                console.error( err );
-            }
-           return db;
-        }
-    
-        var meeting = {
-            "meetingId": "996 9076 0374",
-            "topic": "CS 100 Introduction to Information Technology 1803"    
-        };
-
-        async function initDb(){
-            const db = await idb.openDB(dbName, dbVersion, {
+        var db;
+        async function initDb() {
+            db = await idb.openDB(dbName, dbVersion, {
                 upgrade(db) {
-                db.createObjectStore('meetings', { keyPath: 'id' });
-                // store.createIndex('email', 'email', { unique: true });
+                    db.createObjectStore('meetings', { keyPath: 'meetingId' });
+                    db.createObjectStore('meetingInstances', { keyPath: ['meetingId', 'start'] });
+                    // instanceStore.createIndex('meetingId', 'meetingId', { unique: true });
                 },
             });
-            return db;
         }
 
         async function addRecord(storeName, data) {
-            const tx = await db.transaction(storeName, 'readwrite');
-            const store = tx.objectStore(storeName);
-            await store.add(data);
-            await tx.done;
+            return new Promise(async (resolve, reject) => {
+                try {
+                    const tx = await db.transaction(storeName, 'readwrite');
+                    const store = tx.objectStore(storeName);
+                    await store.add(data);
+                    await tx.done;
+                } catch (err) {
+                    console.error(err);
+                }
+                resolve();
+            });
         }
 
-
-        
+        async function getRecord(storeName, key) {
+            return new Promise(async (resolve, reject) => {
+                try {
+                    const tx = await db.transaction(storeName, 'readwrite');
+                    const store = tx.objectStore(storeName);
+                    var record = await store.get(key);
+                    await tx.done;
+                    resolve(record);
+                } catch (err) {
+                    console.error(err);
+                    reject(err);
+                }
+            });
+        }
 
         window.addEventListener("load", async (event) => {
-
+            initDb();
         });
 
         const fileInput = document.getElementById("fileZoomCSV");
@@ -118,6 +125,93 @@
             const files = fileInput.files;
             processFiles(files);
         });
+
+        async function processRecord(record){
+            if( record.Topic != null && record["Email"] != null) { // not undefined
+                try{
+                    var meetingId = record.ID;
+                    var meeting;
+                    // first make sure it isn't already in the db
+                    if( meetingId ){
+                        meeting = await getRecord('meetings', meetingId);
+                        if( meeting == null ){
+                            var meetingTopic = record.Topic;
+                            var meeting = {
+                                "meetingId": meetingId,
+                                "topic": meetingTopic
+                            }
+                            await addRecord('meetings', meeting);
+                        }
+                    }
+                    // now add an instance
+
+                    var meetingStart = record["Start time"];
+                    var key = [ meetingId, meetingStart ];
+                    var instance = await getRecord( "meetingInstances", key );
+                    if( instance ) {
+                        console.log( JSON.stringify(instance) );
+                    } else {
+                        // add the instance
+                        var meetingInstance = {
+                            "meetingId": meetingId,
+                            "start": meetingStart,
+                            "end": record["End time"],
+                            "duration": record["Duration (minutes)"],
+                            "participants": record["Particpants"]
+                        }
+                        await addRecord( 'meetingInstances', meetingInstance)
+                    }
+
+                    // now 
+                }catch( err ) {
+                    console.error( err );
+                }
+            }
+
+        }
+
+        async function processRecords(records){
+            return new Promise( async ( resolve, reject) => {
+                await async.eachSeries( records, processRecord );
+
+                resolve();
+            });
+        }
+
+        async function processFile(file){
+            return new Promise( (resolve, reject) => {
+                console.log( "Processing file: " + file.name );
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    const fileContent = event.target.result; // Get the file content
+                    var records = Papa.parse(fileContent, { "dynamicTyping": true, "header": true });
+                    if (records.meta.fields.length == 25) {
+                        // TODO: validate names 
+                        try{
+                            await processRecords(records.data);
+                            resolve();
+                        } catch( err ) {
+                            console.error( err );
+                            reject(err);
+                        }
+                    } else {
+                        var msg = "Error parsing input file: " + file.name;
+                        alert(msg);
+                        reject( msg );
+                    }
+                };
+                reader.onerror = function () {
+                    console.error("Error reading file");
+                };
+                reader.readAsText(file); // Read the file as text (or use readAsDataURL for images)
+            });
+        }
+
+        async function processFiles(files) {
+            await async.eachSeries(files, processFile, function(err){
+                if( err ) console.error(err);
+            });
+        }
 
 
 
