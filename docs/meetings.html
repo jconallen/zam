@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.5.3/papaparse.min.js"
+        integrity="sha256-NVP7i99bgATOVTHmgn6ByLNOezmSZ3lndUVEBk6XsBY=" crossorigin="anonymous"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.7.2/build/global/luxon.min.js"
+        integrity="sha256-UWxf6lyCvfH7XEcrmq/cqc2m3IBrLBLOnWLC4Pw0gQQ=" crossorigin="anonymous"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/async@3.2.6/dist/async.min.js"
+        integrity="sha256-uDzWtmm1K/XBN81NsKQ3dxp0KF3jz7XPO8F3WAA0Whg=" crossorigin="anonymous"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/idb@8.0.3/build/umd.min.js"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q"
+        crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+
+</head>
+
+<body>
+    <div id="navbar"></div>
+
+    <div class="container">
+        <h1>Meetings</h1>
+
+        <div id="meetingList" class="container"></div>
+    </div>
+
+    <!-- code -->
+    <script src="js/utils.js"></script>
+
+    <script type="text/javascript">
+
+        $(function () {
+            $("#navbar").load("navbar.html");
+        });
+
+
+        window.addEventListener("load", async (event) => {
+            await initDb();
+            await buildMeetingDiv();
+        });
+
+        function sortMeetings(meetings){
+            var sortedMeetings = meetings.sort((a, b) => {
+                if( a.ignore == b.ignore ){
+                    return b.topic.localeCompare( a.topic );
+                }
+                return a.ignore > b.ignore ? 1 : -1;
+            });
+        }
+
+        async function buildMeetingDiv(){
+            var meetings = await getAll("meetings");
+            var sortedMeetings = sortMeetings(meetings);
+            for( var i=0;i<meetings.length; i++){
+                var meeting = meetings[i];
+                var icon = "bi-eye";
+                if( meeting.ignore ){
+                    icon = "bi-eye-slash"
+                }
+                var id = meeting.meetingId.replace(/\s+/g, '');
+                var div = `<div class="row"><span id="${id}" class="bi ${icon}" onclick="toggleVisibility('${meeting.meetingId}')">&nbsp;${meeting.topic}</span></div>`;
+
+                $('#meetingList').append(div);
+            }
+        }
+
+        async function toggleVisibility(meetingId){
+            var meeting = await getRecord('meetings',meetingId);
+            var id = meeting.meetingId.replace(/\s+/g, '');
+            var elm = $('#'+id);
+            if( meeting.ignore ) {
+                meeting.ignore = false;
+                elm.removeClass('bi-eye');
+                elm.removeClass('bi-eye-slash');
+                elm.addClass('bi-eye');
+            } else {
+                meeting.ignore = true;
+                elm.removeClass('bi-eye');
+                elm.removeClass('bi-eye-slash');
+                elm.addClass('bi-eye-slash');
+            }
+            await updateRecord('meetings',meeting);
+        }
+
+    </script>
+</body>
+
+</html>

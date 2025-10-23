@@ -29,7 +29,7 @@
 <body>
     <div id="navbar"></div>
     <div class="container">
-        <h1>DB Test</h1>
+        <h1>Attendance Data</h1>
 
         <div class="container">
             <div class="mb-3">
@@ -43,7 +43,6 @@
             </div>
             <div class="mb-3">
                 <h2>Meetings</h2>
-                <button type="button" class="btn btn-primary" onclick="addMeeting()">Add</button>
                 <div id="meetingList" class="container"></div>
             </div>
         </div>
@@ -72,54 +71,61 @@
 
     <!-- code -->
 
+    <script src="js/utils.js"></script>
+
     <script type="text/javascript">
 
-        const dbName = "Attendance";
-        const dbVersion = 1; // Versioning is required for schema updates.
-        var db;
-        async function initDb() {
-            db = await idb.openDB(dbName, dbVersion, {
-                upgrade(db) {
-                    db.createObjectStore('meetings', { keyPath: 'meetingId' });
-                    db.createObjectStore('meetingInstances', { keyPath: ['meetingId', 'start'] });
-                    db.createObjectStore('students', { keyPath: 'email' });
-                    // instanceStore.createIndex('meetingId', 'meetingId', { unique: true });
-                },
-            });
-        }
-
-        async function addRecord(storeName, data) {
-            return new Promise(async (resolve, reject) => {
-                try {
-                    const tx = await db.transaction(storeName, 'readwrite');
-                    const store = tx.objectStore(storeName);
-                    await store.add(data);
-                    await tx.done;
-                } catch (err) {
-                    console.error(err);
-                }
-                resolve();
-            });
-        }
-
-        async function getRecord(storeName, key) {
-            return new Promise(async (resolve, reject) => {
-                try {
-                    const tx = await db.transaction(storeName, 'readwrite');
-                    const store = tx.objectStore(storeName);
-                    var record = await store.get(key);
-                    await tx.done;
-                    resolve(record);
-                } catch (err) {
-                    console.error(err);
-                    reject(err);
-                }
-            });
-        }
+        $(function () {
+            $("#navbar").load("navbar.html");
+        });
 
         window.addEventListener("load", async (event) => {
-            initDb();
+            await initDb();
+            await buildMeetingDiv();
         });
+
+        function sortMeetings(meetings){
+            var sortedMeetings = meetings.sort((a, b) => {
+                if( a.ignore == b.ignore ){
+                    return b.topic.localeCompare( a.topic );
+                }
+                return a.ignore > b.ignore ? 1 : -1;
+            });
+        }
+
+        async function buildMeetingDiv(){
+            var meetings = await getAll("meetings");
+            var sortedMeetings = sortMeetings(meetings);
+            for( var i=0;i<meetings.length; i++){
+                var meeting = meetings[i];
+                var icon = "bi-eye";
+                if( meeting.ignore ){
+                    icon = "bi-eye-slash"
+                }
+                var id = meeting.meetingId.replace(/\s+/g, '');
+                var div = `<div class="row"><span id="${id}" class="bi ${icon}" onclick="toggleVisibility('${meeting.meetingId}')">&nbsp;${meeting.topic}</span></div>`;
+
+                $('#meetingList').append(div);
+            }
+        }
+
+        async function toggleVisibility(meetingId){
+            var meeting = await getRecord('meetings',meetingId);
+            var id = meeting.meetingId.replace(/\s+/g, '');
+            var elm = $('#'+id);
+            if( meeting.ignore ) {
+                meeting.ignore = false;
+                elm.removeClass('bi-eye');
+                elm.removeClass('bi-eye-slash');
+                elm.addClass('bi-eye');
+            } else {
+                meeting.ignore = true;
+                elm.removeClass('bi-eye');
+                elm.removeClass('bi-eye-slash');
+                elm.addClass('bi-eye-slash');
+            }
+            await updateRecord('meetings',meeting);
+        }
 
         const fileInput = document.getElementById("fileZoomCSV");
         fileInput.addEventListener("change", () => {
@@ -139,7 +145,8 @@
                             var meetingTopic = record.Topic;
                             var meeting = {
                                 "meetingId": meetingId,
-                                "topic": meetingTopic
+                                "topic": meetingTopic,
+                                "ignore": false
                             }
                             await addRecord('meetings', meeting);
                         }
@@ -147,8 +154,8 @@
 
                     // now add an instance
                     var meetingStart = record["Start time"];
-                    var key = [ meetingId, meetingStart ];
-                    var instance = await getRecord( "meetingInstances", key );
+                    var meetingKey = [ meetingId, meetingStart ];
+                    var instance = await getRecord( "meetingInstances", meetingKey );
                     if( instance ) {
                         console.log( JSON.stringify(instance) );
                     } else {
@@ -163,7 +170,7 @@
                         await addRecord( 'meetingInstances', meetingInstance)
                     }
 
-                    // now create attendanceRecord
+                    // now create students
                     var email = record.Email;
                     if( email != null && typeof email != 'undefined' ){
                         // see if it i already there
@@ -175,6 +182,24 @@
                             }
                             await addRecord('students', student);
                         }
+                        // finally add attendance records
+                        var joined = record["Join time"];
+                        var attendance = await getRecord( "attendance", [ meetingId, meetingStart, joined] );
+                        if( attendance ) {
+                            console.log( JSON.stringify(attendance) );
+                        } else {
+                            // add the instance
+                            var attendance = {
+                                "meetingId": meetingId,
+                                "start": meetingStart,
+                                "email": email,
+                                "joined": joined,
+                                "left": record["Leave time"],
+                                "duration": record["Duration (minutes)_1"]
+                            }
+                            await addRecord( 'attendance', attendance)
+                        }
+
                     }
 
                     // now 
@@ -188,7 +213,6 @@
         async function processRecords(records){
             return new Promise( async ( resolve, reject) => {
                 await async.eachSeries( records, processRecord );
-
                 resolve();
             });
         }
@@ -203,7 +227,8 @@
                     if (records.meta.fields.length == 25) {
                         // TODO: validate names 
                         try{
-                            await processRecords(records.data);
+                            await async.eachSeries( records, processRecords );
+                            // await async.eachSeries( records, processRecord );
                             resolve();
                         } catch( err ) {
                             console.error( err );

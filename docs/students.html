@@ -42,6 +42,10 @@
             $("#navbar").load("navbar.html");
         });
 
+        window.addEventListener("load", async (event) => {
+            initDb();
+        });
+
         var DateTime = luxon.DateTime;
         const CSV_DATE_FORMAT = "LL/dd/yyyy hh:mm:ss a";
         const JSON_DATE_FORMAT = "LL/dd/yyyy HH:mm";
@@ -51,31 +55,6 @@
 
         window.addEventListener("load", (event) => {
 
-            studentsBuf = localStorage.getItem("students");
-            if (studentsBuf == null) {
-                students = {};
-                saveObj("students", students);
-            } else {
-                try {
-                    students = JSON.parse(studentsBuf);
-                } catch (err) {
-                    alert(err);
-                }
-            }
-
-            meetingsData = localStorage.getItem("meetings");
-            if (meetingsData == null) {
-                meetings = {};
-                saveObj("meetings", meetings);
-            } else {
-                try {
-                    meetings = JSON.parse(meetingsData);
-                } catch (err) {
-                    alert(err);
-                }
-            }
-
-            populateStudents();
 
         });
 
