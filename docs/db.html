@@ -82,6 +82,7 @@
                 upgrade(db) {
                     db.createObjectStore('meetings', { keyPath: 'meetingId' });
                     db.createObjectStore('meetingInstances', { keyPath: ['meetingId', 'start'] });
+                    db.createObjectStore('students', { keyPath: 'email' });
                     // instanceStore.createIndex('meetingId', 'meetingId', { unique: true });
                 },
             });
@@ -143,8 +144,8 @@
                             await addRecord('meetings', meeting);
                         }
                     }
-                    // now add an instance
 
+                    // now add an instance
                     var meetingStart = record["Start time"];
                     var key = [ meetingId, meetingStart ];
                     var instance = await getRecord( "meetingInstances", key );
@@ -160,6 +161,20 @@
                             "participants": record["Particpants"]
                         }
                         await addRecord( 'meetingInstances', meetingInstance)
+                    }
+
+                    // now create attendanceRecord
+                    var email = record.Email;
+                    if( email != null && typeof email != 'undefined' ){
+                        // see if it i already there
+                        var student = await getRecord('students', email);
+                        if( student == null ){
+                            var student = {
+                                "email": email,
+                                "name": record["Name (original name)"]
+                            }
+                            await addRecord('students', student);
+                        }
                     }
 
                     // now 
