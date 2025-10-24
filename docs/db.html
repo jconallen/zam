@@ -164,6 +164,7 @@
 
                     // now add an instance
                     var meetingStart = record["Start time"];
+                    var meetingEnd = record["End time"];
                     var meetingKey = [ meetingId, meetingStart ];
                     var instance = await getRecord( "meetingInstances", meetingKey );
                     if( !instance ) {
@@ -171,7 +172,7 @@
                         var meetingInstance = {
                             "meetingId": meetingId,
                             "start": meetingStart,
-                            "end": record["End time"],
+                            "end": meetingEnd,
                             "duration": record["Duration (minutes)"],
                             "participants": record["Particpants"]
                         }
@@ -197,7 +198,9 @@
                             // add the instance
                             var attendance = {
                                 "meetingId": meetingId,
+                                "meetingDuration": record["Duration (minutes)"],
                                 "start": meetingStart,
+                                "end": meetingEnd,
                                 "email": email,
                                 "joined": joined,
                                 "left": record["Leave time"],

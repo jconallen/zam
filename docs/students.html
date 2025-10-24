@@ -76,7 +76,6 @@
                     // that requires a school email account 
                     var encodedEmail = encodeURIComponent(student.email);
                     var div = `<div class="row"><a href="student.html?email=${encodedEmail}">${student.name}</a></div>`;
-                    console.log( div );
                     $('#studentList').append(div);
                 }
             }
