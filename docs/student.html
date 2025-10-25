@@ -38,12 +38,6 @@
 
         <h3>Attendance Records</h3>
         <div id="attendanceRecords" class="container">
-            <!-- <div id="emptyRow" class="row">
-                <div class="col-3" style="padding-left:15px;"></div>
-                <div id="emptyAttendanceBar" class="col-5" style="height:20px;">
-                    <canvas id="emptyCanvasBar" style="width:100%;height:100%;border-style:solid;border-width:1px;"></canvas>
-                </div>
-            </div> -->
         </div>
     </div>
 
@@ -56,10 +50,6 @@
             $("#navbar").load("navbar.html");
         });
 
-        var DateTime = luxon.DateTime;
-        const CSV_DATE_FORMAT = "LL/dd/yyyy hh:mm:ss a";
-        const JSON_DATE_FORMAT = "LL/dd/yyyy HH:mm";
-
         window.addEventListener("load", async (event) => {
             await initDb();
 
@@ -71,18 +61,18 @@
         });
         //window.addEventListener("resize", drawAttendanceBar);
 
-        async function updateAttendanceBars(){
-            async.eachSeries( barData, drawAttendanceBar,  (err) => {
-                if( err ) console.error( err );
+        async function updateAttendanceBars() {
+            async.eachSeries(barData, drawAttendanceBar, (err) => {
+                if (err) console.error(err);
             });
         }
 
         async function drawAttendanceBar(barData) {
 
             //const canvas = $('#canvas'+barData.index);
-            const canvas = document.getElementById('canvas'+barData.index);
-            if( canvas ) {
-                console.log("Canvas " + barData.index + " width: " + canvas.width + ", height: " + canvas.height );
+            const canvas = document.getElementById('canvas' + barData.index);
+            if (canvas) {
+                console.log("Canvas " + barData.index + " width: " + canvas.width + ", height: " + canvas.height);
                 // fitToContainer(canvas);
                 var attendance = barData.attendance;
                 var dtMeetingStart = DateTime.fromFormat(attendance.start, CSV_DATE_FORMAT);
@@ -97,10 +87,10 @@
 
                 var scale = canvas.width / meetingDuration;
 
-                var minIn = Math.ceil(dtJoined.diff( dtMeetingStart, 'minutes' ).minutes);
-                var minOut = Math.ceil(dtLeft.diff( dtMeetingStart, 'minutes' ).minutes);
+                var minIn = Math.ceil(dtJoined.diff(dtMeetingStart, 'minutes').minutes);
+                var minOut = Math.ceil(dtLeft.diff(dtMeetingStart, 'minutes').minutes);
 
-                console.log( "minIn: " + minIn + " minOut: " + minOut + " scale: " + scale + " meetingStart: " + meetingStartTime );
+                console.log("minIn: " + minIn + " minOut: " + minOut + " scale: " + scale + " meetingStart: " + meetingStartTime);
 
                 var pxIn = scale * minIn;
                 var pxOut = scale * minOut
@@ -108,9 +98,9 @@
                 var height = canvas.height;
 
                 const ctx = canvas.getContext("2d");
-                ctx.fillStyle='red';
+                ctx.fillStyle = 'red';
 
-                ctx.fillRect(pxIn,0,pxOut,height);
+                ctx.fillRect(pxIn, 0, pxOut, height);
 
             }
         }
@@ -133,72 +123,83 @@
 
         var barData = [];
 
-        async function buildStudentDetailsDiv(email) {
-            return new Promise( async (resolve, reject) => {
-            var student = await getRecord('students', email);
-            if (student) {
-                $('#studentName').text(student.name);
-                // todo: just get the records for this student
-                var attendance = await getAll('attendance');
-                var studentAttendance = [];
-                for (var i = 0; i < attendance.length; i++) {
-                    var record = attendance[i];
-                    if (record.email == email) {
-                        studentAttendance.push(record);
-                    }
+        async function buildStudentDetailDiv(attendance) {
+            console.log( "building detal div");
+            var meetingId = attendance.meetingId;
+            var meeting = await getRecord('meetings', meetingId);
+            if (!meeting.ignore) {
+                var dtAttendanceStart = DateTime.fromFormat(attendance.start, CSV_DATE_FORMAT);
+                var attendanceStartTimeSimple = dtAttendanceStart.toLocaleString(DateTime.TIME_SIMPLE);
+                var attendanceStartDateShort = dtAttendanceStart.toLocaleString(DateTime.DATE_SHORT);
+
+                const meetingInstance = await getRecord('meetingInstances', [meetingId,attendanceStartDateShort]);
+                var dtMeetingInstanceStart = DateTime.fromFormat(meetingInstance.start, CSV_DATE_FORMAT);
+                var meetingInstanceStartSimple = dtMeetingInstanceStart.toLocaleString(DateTime.TIME_SIMPLE);
+                var dtMeetingInstanceEnd = DateTime.fromFormat(meetingInstance.end, CSV_DATE_FORMAT);
+                var meetingInstanceEndSimple = dtMeetingInstanceEnd.toLocaleString(DateTime.TIME_SIMPLE);
+
+                var prevJoinedDateShort = null;
+                var dtJoined = DateTime.fromFormat(attendance.joined, CSV_DATE_FORMAT);
+                var joinDateShort = dtJoined.toLocaleString(DateTime.DATE_SHORT);
+                if (prevJoinedDateShort != joinDateShort) {
+                    var meetingDuration = meeting.duration;
+                    // ${joinDateShort} - ${meeting.topic} (${meetingInstanceStartSimple} -> ${meetingInstanceEndSimple})
+                    var div = `<div class="row" style="padding-top:10px;">${joinDateShort} - ${meeting.topic} (${meetingInstanceStartSimple} -> ${meetingInstanceEndSimple})</div>`;
+                    $('#attendanceRecords').append(div);
+                    prevJoinedDateShort = joinDateShort;
                 }
+                var dtLeft = DateTime.fromFormat(attendance.left, CSV_DATE_FORMAT);
+                var joinedTimeSimple = dtJoined.toLocaleString(DateTime.TIME_SIMPLE);
+                var left = DateTime.fromFormat(attendance.left, CSV_DATE_FORMAT);
+                var leftTimeSimple = dtLeft.toLocaleString(DateTime.TIME_SIMPLE);
 
-                // now sort by date / time
-                var sortedAttendance = sortAttendance(studentAttendance);
-                var prevJoinedDateShort = null; // break up records according to dates
-                for (var i = 0; i < sortedAttendance.length; i++) {
-                    var attendance = sortedAttendance[i];
-                    var meetingId = attendance.meetingId;
-                    var meeting = await getRecord('meetings', meetingId);
-                    if (!meeting.ignore) {
-  
-                        var dtJoined = DateTime.fromFormat(attendance.joined, CSV_DATE_FORMAT);
-                        var joinDateShort = dtJoined.toLocaleString(DateTime.DATE_SHORT);
-                        var dtMeetingStart = DateTime.fromFormat(attendance.start, CSV_DATE_FORMAT);
-                        var meetingStartTimeSimple = dtMeetingStart.toLocaleString(DateTime.TIME_SIMPLE);
-                        var dtMeetingEnd = DateTime.fromFormat(attendance.end, CSV_DATE_FORMAT);
-                        var meetingEndTimeSimple = dtMeetingEnd.toLocaleString(DateTime.TIME_SIMPLE);
-                        if (prevJoinedDateShort != joinDateShort) {
-                            var meetingDuration = meeting.duration;
-                            var div = `<div class="row" style="padding-top:10px;">${joinDateShort} - ${meeting.topic} (${meetingStartTimeSimple} -> ${meetingEndTimeSimple})</div>`;
-                            $('#attendanceRecords').append(div);
-                            prevJoinedDateShort = joinDateShort;
-                        }
-                        var dtLeft = DateTime.fromFormat(attendance.left, CSV_DATE_FORMAT);
-                        var joinedTimeSimple = dtJoined.toLocaleString(DateTime.TIME_SIMPLE);
-                        var left = DateTime.fromFormat(attendance.left, CSV_DATE_FORMAT);
-                        var leftTimeSimple = dtLeft.toLocaleString(DateTime.TIME_SIMPLE);
+                var index = barData.length;
+                var bd = {
+                    "attendance": attendance,
+                    "meetingDuration": meeting.duration,
+                    "index": barData.length
+                }
+                barData.push(bd);
 
-                        var index = barData.length;
-                        var bd = {
-                            "attendance": attendance,
-                            "meetingDuration": meeting.duration,
-                            "index": barData.length
-                        }
-                        barData.push(bd);
-                        
-                        // add attendance bar
-                        var div =  `<div class="row" style="padding-left: 20px;">
-                                        <div class="col-3" style="padding-left:15px;">${joinedTimeSimple} -> ${leftTimeSimple} (${attendance.duration}m)</div>
+                // add attendance bar
+                var div = `<div class="row" style="padding-left: 20px;">
+                                        <div class="col-3" style="padding-left:15px;">${joinedTimeSimple} -> ${leftTimeSimple} (${attendance.duration})</div>
                                         <div class="col-5" style="height:20px;">
                                             <canvas id="canvas${index}" style="width:100%;height:100%;border-style:solid;border-width:1px;"></canvas>
                                         </div></div>`;
-                        $('#attendanceRecords').append(div);
+                $('#attendanceRecords').append(div);
 
-                                              
-                    }
-                }
-                resolve();
-
-            } else {
-                alert("unable to get student information for : " + email);
-                reject(email);
             }
+            console.log( "done building detal div");
+        }
+
+        async function buildStudentDetailsDiv(email) {
+            return new Promise(async (resolve, reject) => {
+                var student = await getRecord('students', email);
+                if (student) {
+                    $('#studentName').text(student.name);
+                    // todo: just get the records for this student
+                    var attendance = await getAll('attendance');
+                    var studentAttendance = [];
+                    for (var i = 0; i < attendance.length; i++) {
+                        var record = attendance[i];
+                        if (record.email == email) {
+                            studentAttendance.push(record);
+                        }
+                    }
+
+                    // now sort by date / time
+                    var sortedAttendance = sortAttendance(studentAttendance);
+                    var prevJoinedDateShort = null; // break up records according to dates
+                    await async.eachSeries(sortedAttendance,buildStudentDetailDiv, (err) => {
+                        console.log( "finished build div");
+                        resolve();
+                    });
+
+                } else {
+                    alert("unable to get student information for : " + email);
+                    reject(email);
+                }
             });
         }
 

@@ -2,11 +2,15 @@ const dbName = "Attendance";
 const dbVersion = 1; // Versioning is required for schema updates.
 var db;
 
+const DateTime = luxon.DateTime;
+const CSV_DATE_FORMAT = "LL/dd/yyyy hh:mm:ss a";
+const JSON_DATE_FORMAT = "LL/dd/yyyy HH:mm";
+
 async function initDb() {
     db = await idb.openDB(dbName, dbVersion, {
         upgrade(db) {
             db.createObjectStore('meetings', { keyPath: 'meetingId' });
-            db.createObjectStore('meetingInstances', { keyPath: ['meetingId', 'start'] });
+            db.createObjectStore('meetingInstances', { keyPath: ['meetingId', 'startDate'] });
             db.createObjectStore('students', { keyPath: 'email' });
             db.createObjectStore('attendance', { keyPath: ['meetingId', 'start', 'joined'] });
             // instanceStore.createIndex('meetingId', 'meetingId', { unique: true });
@@ -48,7 +52,7 @@ async function getRecord(storeName, key) {
     return new Promise(async (resolve, reject) => {
         try {
             const tx = await db.transaction(storeName, 'readwrite');
-            const store = tx.objectStore(storeName);
+            const store = await tx.objectStore(storeName);
             var record = await store.get(key);
             await tx.done;
             resolve(record);

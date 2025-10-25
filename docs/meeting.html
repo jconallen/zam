@@ -45,9 +45,6 @@
             $("#navbar").load("navbar.html");
         });
 
-        var DateTime = luxon.DateTime;
-        const CSV_DATE_FORMAT = "LL/dd/yyyy hh:mm:ss a";
-        const JSON_DATE_FORMAT = "LL/dd/yyyy HH:mm";
         
         window.addEventListener("load", async (event) => {
             await initDb();

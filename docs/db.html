@@ -164,19 +164,48 @@
 
                     // now add an instance
                     var meetingStart = record["Start time"];
+                    var dtMeetingStart = DateTime.fromFormat(meetingStart,CSV_DATE_FORMAT);
+                    var meetingStartDateShort = dtMeetingStart.toLocaleString(DateTime.DATE_SHORT);
                     var meetingEnd = record["End time"];
-                    var meetingKey = [ meetingId, meetingStart ];
+                    var meetingKey = [ meetingId, meetingStartDateShort ];
+                    var participants = record["Participants"];
                     var instance = await getRecord( "meetingInstances", meetingKey );
                     if( !instance ) {
                         // add the instance
                         var meetingInstance = {
                             "meetingId": meetingId,
+                            "startDate": meetingStartDateShort,
                             "start": meetingStart,
                             "end": meetingEnd,
                             "duration": record["Duration (minutes)"],
-                            "participants": record["Particpants"]
+                            "participants": participants
                         }
                         await addRecord( 'meetingInstances', meetingInstance)
+                    } else {
+                        // check to see if there is an ammendment
+                        var updateInstance = false;
+                        var dtEndTime = DateTime.fromFormat(instance.end,CSV_DATE_FORMAT);
+                        var dtInstanceEnd = DateTime.fromFormat(meetingEnd,CSV_DATE_FORMAT);
+                        if( dtInstanceEnd.diff(dtEndTime) > 0 ){
+                            // then we need to expand this meeting instance times
+                            console.log( "End times: " + instance.end + " < " + meetingEnd );
+                            instance.end = meetingEnd;
+                            updateInstance = true; 
+                        }
+
+                        var dtStart = DateTime.fromFormat(instance.start,CSV_DATE_FORMAT);
+                        var dtInstanceStart = DateTime.fromFormat(meetingStart,CSV_DATE_FORMAT);                        
+                        if( dtStart.diff( dtInstanceStart ) > 0 ){
+                            console.log( "Start times: " + instance.start + " > " + meetingStart );
+                            instance.start = meetingStart;
+                            updateInstance = true;
+                        }
+
+                        if( updateInstance ){
+                            console.log( "Updating instance: " + JSON.stringify(instance,null,4));
+                            await updateRecord('meetingInstances', instance);
+                        }
+                        
                     }
 
                     // now create students
