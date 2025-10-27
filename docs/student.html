@@ -72,35 +72,54 @@
             //const canvas = $('#canvas'+barData.index);
             const canvas = document.getElementById('canvas' + barData.index);
             if (canvas) {
-                console.log("Canvas " + barData.index + " width: " + canvas.width + ", height: " + canvas.height);
+                
                 // fitToContainer(canvas);
                 var attendance = barData.attendance;
-                var dtMeetingStart = DateTime.fromFormat(attendance.start, CSV_DATE_FORMAT);
-                var meetingStartTime = dtMeetingStart.toLocaleString(DateTime.TIME_SIMPLE);
-                var dtMeetingEnd = DateTime.fromFormat(attendance.end, CSV_DATE_FORMAT);
+                var dtAttendanceStart = DateTime.fromFormat(attendance.start, CSV_DATE_FORMAT);
+                var attendanceStartDateShort = dtAttendanceStart.toLocaleString(DateTime.DATE_SHORT);
+                var meetingInstance = await getRecord('meetingInstances', [ attendance.meetingId, attendanceStartDateShort]);
+
+                var dtMeetingInstanceStart = DateTime.fromFormat(meetingInstance.start, CSV_DATE_FORMAT);
+                var meetingInstanceStartDate = dtMeetingInstanceStart.toLocaleString(DateTime.DATE_SHORT);
+
+                // get meeting instance (summary of all times)
+                
+                var dtMeetingInstanceEnd = DateTime.fromFormat(meetingInstance.end, CSV_DATE_FORMAT);
+
+                var meetingInstanceStartTimeSimple = dtMeetingInstanceStart.toLocaleString(DateTime.TIME_SIMPLE);
+                var meetingInstanceEndTimeSimple = dtMeetingInstanceEnd.toLocaleString(DateTime.TIME_SIMPLE);
+
+                var diffObj = dtMeetingInstanceEnd.diff(dtMeetingInstanceStart,'minutes').toObject();
+                var meetingInstanceDuration = Math.ceil(diffObj.minutes);
+
+                console.log( `Meeting: ${meetingInstanceStartTimeSimple}  to ${meetingInstanceEndTimeSimple}`);
+
                 var dtJoined = DateTime.fromFormat(attendance.joined, CSV_DATE_FORMAT);
+
                 var dtLeft = DateTime.fromFormat(attendance.left, CSV_DATE_FORMAT);
                 var joinedTimeSimple = dtJoined.toLocaleString(DateTime.TIME_SIMPLE);
                 var left = DateTime.fromFormat(attendance.left, CSV_DATE_FORMAT);
                 var leftTimeSimple = dtLeft.toLocaleString(DateTime.TIME_SIMPLE);
-                var meetingDuration = attendance.meetingDuration;
 
-                var scale = canvas.width / meetingDuration;
+                var scale = canvas.width / meetingInstanceDuration;
 
-                var minIn = Math.ceil(dtJoined.diff(dtMeetingStart, 'minutes').minutes);
-                var minOut = Math.ceil(dtLeft.diff(dtMeetingStart, 'minutes').minutes);
+                var minIn = Math.ceil(dtJoined.diff(dtMeetingInstanceStart, 'minutes').minutes);
+                var minOut = Math.ceil(dtLeft.diff(dtMeetingInstanceStart, 'minutes').minutes);
 
-                console.log("minIn: " + minIn + " minOut: " + minOut + " scale: " + scale + " meetingStart: " + meetingStartTime);
+                var pxIn = Math.floor(scale * minIn);
+                var pxOut = Math.floor(scale * minOut);
 
-                var pxIn = scale * minIn;
-                var pxOut = scale * minOut
+                console.log("Canvas " + barData.index + " width: " + canvas.width + ", height: " + canvas.height);
+                console.log("minIn: " + minIn + " minOut: " + minOut + " scale: " + scale );
+                console.log("pxIn: " + pxIn + " pxOut: " + pxOut );
 
                 var height = canvas.height;
 
                 const ctx = canvas.getContext("2d");
-                ctx.fillStyle = 'red';
+                ctx.fillStyle = 'darkred';
 
-                ctx.fillRect(pxIn, 0, pxOut, height);
+                var len = pxOut - pxIn;
+                ctx.fillRect(pxIn, 0, len, height);
 
             }
         }
@@ -122,9 +141,10 @@
         }
 
         var barData = [];
+        var mtgInstance = [];
 
         async function buildStudentDetailDiv(attendance) {
-            console.log( "building detal div");
+            //console.log( "building detal div");
             var meetingId = attendance.meetingId;
             var meeting = await getRecord('meetings', meetingId);
             if (!meeting.ignore) {
@@ -137,16 +157,17 @@
                 var meetingInstanceStartSimple = dtMeetingInstanceStart.toLocaleString(DateTime.TIME_SIMPLE);
                 var dtMeetingInstanceEnd = DateTime.fromFormat(meetingInstance.end, CSV_DATE_FORMAT);
                 var meetingInstanceEndSimple = dtMeetingInstanceEnd.toLocaleString(DateTime.TIME_SIMPLE);
+                var meetingInstanceStartDateShort = dtMeetingInstanceStart.toLocaleString(DateTime.DATE_SHORT);
 
                 var prevJoinedDateShort = null;
                 var dtJoined = DateTime.fromFormat(attendance.joined, CSV_DATE_FORMAT);
                 var joinDateShort = dtJoined.toLocaleString(DateTime.DATE_SHORT);
-                if (prevJoinedDateShort != joinDateShort) {
+                if ( !mtgInstance.includes(meetingInstanceStartDateShort)) {
                     var meetingDuration = meeting.duration;
                     // ${joinDateShort} - ${meeting.topic} (${meetingInstanceStartSimple} -> ${meetingInstanceEndSimple})
                     var div = `<div class="row" style="padding-top:10px;">${joinDateShort} - ${meeting.topic} (${meetingInstanceStartSimple} -> ${meetingInstanceEndSimple})</div>`;
                     $('#attendanceRecords').append(div);
-                    prevJoinedDateShort = joinDateShort;
+                    mtgInstance.push(meetingInstanceStartDateShort);
                 }
                 var dtLeft = DateTime.fromFormat(attendance.left, CSV_DATE_FORMAT);
                 var joinedTimeSimple = dtJoined.toLocaleString(DateTime.TIME_SIMPLE);
@@ -163,14 +184,16 @@
 
                 // add attendance bar
                 var div = `<div class="row" style="padding-left: 20px;">
-                                        <div class="col-3" style="padding-left:15px;">${joinedTimeSimple} -> ${leftTimeSimple} (${attendance.duration})</div>
+                                        <div class="col-3" style="padding-left:15px;">${joinedTimeSimple} -> ${leftTimeSimple} (${attendance.duration}m)</div>
                                         <div class="col-5" style="height:20px;">
                                             <canvas id="canvas${index}" style="width:100%;height:100%;border-style:solid;border-width:1px;"></canvas>
                                         </div></div>`;
                 $('#attendanceRecords').append(div);
 
+                // drawAttendanceBar(bd)
+
             }
-            console.log( "done building detal div");
+            //console.log( "done building detal div");
         }
 
         async function buildStudentDetailsDiv(email) {
@@ -192,7 +215,7 @@
                     var sortedAttendance = sortAttendance(studentAttendance);
                     var prevJoinedDateShort = null; // break up records according to dates
                     await async.eachSeries(sortedAttendance,buildStudentDetailDiv, (err) => {
-                        console.log( "finished build div");
+                        //console.log( "finished build div");
                         resolve();
                     });
 
