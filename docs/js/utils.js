@@ -4,7 +4,25 @@ var db;
 
 const DateTime = luxon.DateTime;
 const CSV_DATE_FORMAT = "LL/dd/yyyy hh:mm:ss a";
-const JSON_DATE_FORMAT = "LL/dd/yyyy HH:mm";
+
+function parseDateString(csvDateTime){
+    try{
+        var dt = DateTime.fromFormat(csvDateTime,CSV_DATE_FORMAT);
+        var timeSimple = dt.toLocaleString(DateTime.TIME_SIMPLE);
+        var dateSimple = dt.toLocaleString(DateTime.DATE_SHORT);
+        var dateDow = dt.toLocaleString(DateTime.DATE_MED_WITH_WEEKDAY);
+
+        var parsedDateTime = {
+            "timeSimple": timeSimple,
+            "dateSimple": dateSimple,
+            "dateDow": dateDow
+        }
+        return parsedDateTime;
+
+    } catch( err ) {
+        console.error( err ) ;
+    }
+}
 
 async function initDb() {
     db = await idb.openDB(dbName, dbVersion, {

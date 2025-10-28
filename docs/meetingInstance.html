@@ -90,9 +90,10 @@
                             var attendanceeRecords = {};  // todo: sort
                             for( var j=0; j<allAttendanceRecords.length; j++){
                                 var attendance = allAttendanceRecords[j];
-                                var dtAttendanceStart = DateTime.fromFormat(attendance.start, CSV_DATE_FORMAT);
-                                var attendanceStartDate = dtAttendanceStart.toLocaleString(DateTime.DATE_SHORT);
-                                if( attendanceStartDate == startDateSimple ) {
+                                // var dtAttendanceStart = DateTime.fromFormat(attendance.start, CSV_DATE_FORMAT);
+                                // var attendanceStartDate = dtAttendanceStart.toLocaleString(DateTime.DATE_SHORT);
+                                var attendanceStart = parseDateString(attendance.start);
+                                if( attendanceStart.dateSimple == startDateSimple ) {
                                     if( typeof attendanceeRecords[attendance.email] == 'undefined' ) {
                                         attendanceeRecords[attendance.email] = {
                                             "email": attendance.email,
