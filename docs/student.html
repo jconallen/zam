@@ -31,13 +31,10 @@
 
     <div class="container">
         <h1 id="studentName"></h1>
-
-        <div class="container">
-
-        </div>
-
+        <p id="studentEmail"></p>
         <h3>Attendance Records</h3>
-        <div id="attendanceRecords" class="container">
+        <div class="container">
+            <div id="attendanceRecords" class="container"></div>
         </div>
     </div>
 
@@ -200,7 +197,8 @@
             return new Promise(async (resolve, reject) => {
                 var student = await getRecord('students', email);
                 if (student) {
-                    $('#studentName').text(student.name);
+                    $('#studentName').text( `${student.name}`);
+                    $('#studentEmail').text( `${student.email}` )
                     // todo: just get the records for this student
                     var attendance = await getAll('attendance');
                     var studentAttendance = [];

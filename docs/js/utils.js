@@ -24,6 +24,12 @@ function parseDateString(csvDateTime){
     }
 }
 
+function csvTimeDuration( startCsvTime, endCsvTime){
+    var start = DateTime.fromFormat(startCsvTime,CSV_DATE_FORMAT);
+    var end = DateTime.fromFormat(endCsvTime,CSV_DATE_FORMAT);
+    return Math.floor( end.diff(start,'minutes').toObject().minutes);
+}
+
 async function initDb() {
     db = await idb.openDB(dbName, dbVersion, {
         upgrade(db) {

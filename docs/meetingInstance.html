@@ -31,9 +31,13 @@
 
     <div class="container">
         <h1>Meeting Instance</h1>
-        <h2 id="topicName"></h2>
+        <h3 id="topicName"></h3>
+        <p id="meetingDateTime"></p>
 
-        <div id="meetingInstanceList" class="container"></div>
+        <h3>Attendees <span id="attendeeCount"></span></h3>
+        <div id="attendance" class="container">
+
+        </div>
     </div>
 
     <!-- code -->
@@ -44,6 +48,8 @@
         $(function () {
             $("#navbar").load("navbar.html");
         });
+
+        var students = {};
         
         window.addEventListener("load", async (event) => {
             await initDb();
@@ -51,74 +57,70 @@
             const queryString = window.location.search; 
             const urlParams = new URLSearchParams(queryString);
             const meetingId = urlParams.get('meetingId'); 
-            buildMeetingDetailsDiv(meetingId);
+            const startDate = urlParams.get('startDate');
+
+            var meeting = await getRecord('meetings', meetingId );
+            if( meeting ) {
+                var meetingInstance = await getRecord('meetingInstances', [ meetingId, startDate ] );
+                if( meetingInstance ) {
+                    $('#topicName').text( meeting.topic );
+                    var startDateTime = parseDateString( meetingInstance.start );
+                    var endDateTime = parseDateString( meetingInstance.end );
+                    var duration = csvTimeDuration(meetingInstance.start, meetingInstance.end );
+                    $('#meetingDateTime').text( `${startDateTime.timeSimple} -> ${endDateTime.timeSimple}, (${duration}m)`);
+
+                    populateStudents( meetingId, meetingInstance.start );
+                } else {
+                    console.error( `Meeting instance: ${meetingId}, ${startDate} not found.`);
+                }
+            } else {
+                console.error( `Meeting: ${meetingId} not found.`)
+            }
+            console.log( JSON.stringify(meetingInstance, null, 4));
+
         });
 
-        function sortInstances(instances){
-            var sortedInstances = instances.sort((a, b) => {
-                var aStart = DateTime.fromFormat(a.start, CSV_DATE_FORMAT);
-                var bStart = DateTime.fromFormat(b.start, CSV_DATE_FORMAT);
-                return ( aStart.startOf("day") <= bStart.startOf("day") );
-            });
-            return sortedInstances;
-        }
-
-        async function buildMeetingDetailsDiv(meetingId){
+        async function populateStudents(meetingId, start){
             try{
-                var meeting = await getRecord('meetings', meetingId);
-                // too: get just instances for this meeting id
-                var instances = await getAll('meetingInstances');
-                var sortedInstances = sortInstances(instances);
-                var prevDate = null;
-                if( meeting ){
-                    $('#topicName').text(meeting.topic);
-                    for( var i=0; i<sortedInstances.length; i++){
-                        var instance = sortedInstances[i];
-                        if( instance.meetingId == meetingId){
-                            var dtStartDate = DateTime.fromFormat(instance.start, CSV_DATE_FORMAT);
-                            var startDateSimple = dtStartDate.toLocaleString(DateTime.DATE_SHORT);
-                            var startDateWeekday = dtStartDate.toLocaleString(DateTime.DATE_MED_WITH_WEEKDAY);
-                            var startTimeSimple = dtStartDate.toLocaleString(DateTime.TIME_SIMPLE);
-                            var dtEndTime = DateTime.fromFormat(instance.end, CSV_DATE_FORMAT);
-                            var endTimeSimple = dtEndTime.toLocaleString(DateTime.TIME_SIMPLE);
-
-                            var duration = instance.duration;
-                            var participants = instance.participants;
-
-                            // TODO: just get attendance records associated for this instance
-                            var allAttendanceRecords = await getAll('attendance');
-                            var attendanceeRecords = {};  // todo: sort
-                            for( var j=0; j<allAttendanceRecords.length; j++){
-                                var attendance = allAttendanceRecords[j];
-                                // var dtAttendanceStart = DateTime.fromFormat(attendance.start, CSV_DATE_FORMAT);
-                                // var attendanceStartDate = dtAttendanceStart.toLocaleString(DateTime.DATE_SHORT);
-                                var attendanceStart = parseDateString(attendance.start);
-                                if( attendanceStart.dateSimple == startDateSimple ) {
-                                    if( typeof attendanceeRecords[attendance.email] == 'undefined' ) {
-                                        attendanceeRecords[attendance.email] = {
-                                            "email": attendance.email,
-                                            attendance: []
-                                        }
-                                    }
-                                    attendanceeRecords[attendance.email].attendance.push( attendance);
-                                }
-                            }
-
-                            var attendanceRecordCount = Object.keys(attendanceeRecords).length;
-
-                            $('#meetingInstanceList').append( `<div class="row">${startDateWeekday}; ${startTimeSimple} -> ${endTimeSimple}, ${duration}m with ${attendanceRecordCount} participants</div></div>` );
-
-                        }
-
-                    }
-                } else {
-                    alert("unable to get meeting: " + meetingId);
+                var studentRecords = await getAll('students');
+                // now index them
+                for( var i=0; i<studentRecords.length; i++){
+                    students[ studentRecords[i].email ] = studentRecords[i];
                 }
 
-            } catch( err ) {
-                console.log( err );
+                // todo: only get records for this meeting instance
+                var attendance = await getAll('attendance');
+                var sortedAttendance = sortAttendance( attendance );
+                // todo: sort by name
+                for( var i=0; i<sortedAttendance.length; i++){
+                    var attendanceRecord = sortedAttendance[i];
+                    if( attendanceRecord.meetingId == meetingId && attendanceRecord.start == start ){
+                        var student = students[sortedAttendance[i].email];
+                        var div = `<div class="row"><a href="student.html?email=${student.email}">${student.name}</a></div>`;
+                        $('#attendance').append(div);
+                        console.log( JSON.stringify(attendanceRecord) );
+                    }
+                }
+
+            } catch ( err ) {
+                console.error( err );
             }
+
         }
+
+        function sortAttendance(attendance){
+            return attendance.sort((a, b) => {
+                var aName = students[a.email].name;
+                var bName = students[b.email].name;
+                if( aName == bName ){
+                    var aStart = DateTime.fromFormat(a.start,CSV_DATE_FORMAT);
+                    var bStart = DateTime.fromFormat(b.start,CSV_DATE_FORMAT);
+                    return aStart - bStart;
+                }
+                return aName.localeCompare( bName );
+            });
+        }
+
 
 
 

@@ -105,7 +105,7 @@
 
                             var attendanceRecordCount = Object.keys(attendanceeRecords).length;
 
-                            $('#meetingInstanceList').append( `<div class="row">${startDateWeekday}; ${startTimeSimple} -> ${endTimeSimple}, ${duration}m with ${attendanceRecordCount} participants</div></div>` );
+                            $('#meetingInstanceList').append( `<div class="row"><a href="meetingInstance.html?meetingId=${encodeURIComponent(instance.meetingId)}&startDate=${startDateSimple}">${startDateWeekday}; ${startTimeSimple} -> ${endTimeSimple}, ${duration}m with ${attendanceRecordCount} participants</a></div></div>` );
 
                         }
 
