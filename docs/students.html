@@ -127,10 +127,11 @@
                     // that requires a school email account 
 
                     var stats = await attendanceStats( student.email, allAttendanceRecords, meetingInstances );
+                    var inClassPercentage = Math.round(100 * stats.inClassMinutes / stats.totalClassMinutes);
                     var encodedEmail = encodeURIComponent(student.email);
                     var div = `<div class="row rounded border w-50" style="padding:5px;margin:5px;"><a href="student.html?email=${encodedEmail}">${student.name}</a>
                         <p style="margin-left:10px;">Recorded attendances: ${stats.recordCount}</br>
-                        In class minutes: ${stats.inClassMinutes} / ${stats.totalClassMinutes}</p></div>`;
+                        In class minutes: ${stats.inClassMinutes} out of ${stats.totalClassMinutes} for instances attended (${inClassPercentage}%).</p></div>`;
                     $('#studentList').append(div);
                 }
             }

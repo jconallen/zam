@@ -5,11 +5,23 @@
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"
         integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
 
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.5.3/papaparse.min.js"
+        integrity="sha256-NVP7i99bgATOVTHmgn6ByLNOezmSZ3lndUVEBk6XsBY=" crossorigin="anonymous"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.7.2/build/global/luxon.min.js"
+        integrity="sha256-UWxf6lyCvfH7XEcrmq/cqc2m3IBrLBLOnWLC4Pw0gQQ=" crossorigin="anonymous"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/async@3.2.6/dist/async.min.js"
+        integrity="sha256-uDzWtmm1K/XBN81NsKQ3dxp0KF3jz7XPO8F3WAA0Whg=" crossorigin="anonymous"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/idb@8.0.3/build/umd.min.js"></script>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q"
         crossorigin="anonymous"></script>
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
 
 </head>
@@ -19,11 +31,36 @@
 
     <div class="container">
         <h1>About</h1>
+        <p>v0.1.0</p>
 
         <div class="container">
-            This is a simple application to me organize the attendance reports from Zoom meetings, so that it is more
-            student (participant) focused. It is 100% HTML and Javascript, and does not require a server or separate
-            executable engine.
+            <p>This is a simple application that I wrote to help me organize the attendance reports from Zoom meetings.  The context is one or more a sychronous online college courses.  That is, one or more recurring meetings are set up and a a dozen or more students participate in each over a semester's period of time.</p>
+            
+            <p>The problem being solved is that the downloaded Zoom attendance reports are simple spreadhsheets (in CSV format) that organize the data by meeting instance, listing all the participants with thier join and leave times.  Whie this is useful to get an idea of individual meeting instances, it doesn't help if you are interested in a specific atendee's participation over the course of the semester.  This simple application just makes it easier to view attendance records, with a student focus.</p>
+            
+            <p>It is 100% HTML and Javascript, hosted on GitHub pages with the source code avaiable as a public application under teh MIT licesnse.  It does not require a server or separate
+            executable engine, and runs completely inside a compatible browser. This means several things;
+                <ul>
+                    <li>No data is ever transmitted over the network. All downloaded is stored locally in the browser's IndexedDB storage.</li>
+                    <li>When Zoom CSV files are "uploaded" into the browser application, it is only persistent if you use the same browser (e.g., Chrome or Firefox) on teh same computer each time to use the application.</li>
+                    <li>This application uses several JavaScript libraries from the CDN <a href="https://www.jsdelivr.com/" target="_blank">JSDeliver</a>.  These include:
+                        <ul>
+                            <li>JQuery</li>
+                            <li>PapaParse</li>
+                            <li>Luxon</li>
+                            <li>IDB</li>
+                            <li>Bootstrap</li>
+                            <li>FullCalendar</li>
+                        </ul>
+                        Unless you manually download all these components and this application's files, and edit them, you will need to use this application while connected to the Internet.
+
+                    </li>
+                </ul>
+        
+            </p>
+
+            <p>Hope you find this app useful.</p>
+            <p>-jim conallen</p>
         </div>
 
 
@@ -31,6 +68,7 @@
     </div>
 
     <!-- code -->
+    <script src="js/utils.js"></script>
 
     <script type="text/javascript">
 
