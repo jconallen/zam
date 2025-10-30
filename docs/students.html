@@ -54,17 +54,83 @@
 
         });
 
+        function searchForMeetingInstance( meetingId, start, meetingInstances ){
+            // yeah, I know this is wasteful, to TODO: fix this to more performant and elegant
+            for( var i=0; i<meetingInstances.length; i++){
+                var meetingInstance = meetingInstances[i];
+                var dtMeetingInstance
+                if( meetingInstance.meetingId == meetingId && meetingInstance.start == start ){
+                    return meetingInstance;
+                }
+            }
+        }
+
+        async function attendanceStats( email, allAttendanceRecords, meetingInstances ){
+    
+            var meetingInstanceDurationCache = {};
+            var inClassMinutes = 0;
+            var recordCount = 0;
+            for( var i=0; i<allAttendanceRecords.length; i++){
+                if( allAttendanceRecords[i].email == email ) {
+                    var meetingId = allAttendanceRecords[i].meetingId;
+                    var dtStart = DateTime.fromFormat(allAttendanceRecords[i].start, CSV_DATE_FORMAT);
+                    var startSimple = dtStart.toLocaleString(DateTime.DATE_SHORT);
+                    var meetingInstance = meetingInstancesCache[ meetingId + startSimple ];
+                    if( meetingInstance ) {
+                        var dtMeetingStart = DateTime.fromFormat(allAttendanceRecords[i].start, CSV_DATE_FORMAT);
+                        var meetingStart = dtMeetingStart.toLocaleString(DateTime.DATE_SHORT);
+                        var key = meetingId +","+meetingStart;
+                        meetingInstanceDurationCache[key] = meetingInstance.duration;
+                        var recordEmail = allAttendanceRecords[i].email;
+                        if( recordEmail == email ) recordCount++;
+                        // get in class time minutes
+                        inClassMinutes += allAttendanceRecords[i].duration;
+                    } else {
+                        console.error( meetingId + " " + allAttendanceRecords[i].start  );
+                    }
+                }
+            }
+            // now sum up the meeting durations
+            var totalClassMinutes = 0;
+            var keys = Object.keys(meetingInstanceDurationCache);
+            for( var i=0; i<keys.length; i++){
+                var meetingInstanceDuration = meetingInstanceDurationCache[ keys[i] ];
+                totalClassMinutes += meetingInstanceDuration;
+            }
+            var stats = {
+                "recordCount": recordCount,
+                "inClassMinutes": inClassMinutes,
+                "totalClassMinutes": totalClassMinutes
+            }
+            return stats;
+        }
+
+        var meetingInstancesCache = {};
+
         async function populateStudents() {
             // $('#studentPre').text( JSON.stringify(students,null,4));
             // $('#studentList').empty();
+            var meetingInstances = await getAll('meetingInstances');
+            for( var i=0; i<meetingInstances.length;i++){
+                var meetingInstance = meetingInstances[i];
+                var dtStart = DateTime.fromFormat(meetingInstance.start, CSV_DATE_FORMAT);
+                var startSimple = dtStart.toLocaleString(DateTime.DATE_SHORT);
+                var key = meetingInstance.meetingId + startSimple;
+                meetingInstancesCache[ key ] = meetingInstance;
+            }
+            var allAttendanceRecords = await getAll('attendance');
             var students = await getAll('students');
             for (var i = 0; i < students.length; i++) {
                 var student = students[i];
                 if( student.email != null ) {
                     // email can be null if this is a personal meeting or not one 
                     // that requires a school email account 
+
+                    var stats = await attendanceStats( student.email, allAttendanceRecords, meetingInstances );
                     var encodedEmail = encodeURIComponent(student.email);
-                    var div = `<div class="row"><a href="student.html?email=${encodedEmail}">${student.name}</a></div>`;
+                    var div = `<div class="row rounded border w-50" style="padding:5px;margin:5px;"><a href="student.html?email=${encodedEmail}">${student.name}</a>
+                        <p style="margin-left:10px;">Recorded attendances: ${stats.recordCount}</br>
+                        In class minutes: ${stats.inClassMinutes} / ${stats.totalClassMinutes}</p></div>`;
                     $('#studentList').append(div);
                 }
             }
