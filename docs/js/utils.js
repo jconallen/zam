@@ -5,9 +5,9 @@ var db;
 const DateTime = luxon.DateTime;
 const CSV_DATE_FORMAT = "LL/dd/yyyy hh:mm:ss a";
 
-function parseDateString(csvDateTime){
-    try{
-        var dt = DateTime.fromFormat(csvDateTime,CSV_DATE_FORMAT);
+function parseDateString(csvDateTime) {
+    try {
+        var dt = DateTime.fromFormat(csvDateTime, CSV_DATE_FORMAT);
         var timeSimple = dt.toLocaleString(DateTime.TIME_SIMPLE);
         var dateSimple = dt.toLocaleString(DateTime.DATE_SHORT);
         var dateDow = dt.toLocaleString(DateTime.DATE_MED_WITH_WEEKDAY);
@@ -19,15 +19,15 @@ function parseDateString(csvDateTime){
         }
         return parsedDateTime;
 
-    } catch( err ) {
-        console.error( err ) ;
+    } catch (err) {
+        console.error(err);
     }
 }
 
-function csvTimeDuration( startCsvTime, endCsvTime){
-    var start = DateTime.fromFormat(startCsvTime,CSV_DATE_FORMAT);
-    var end = DateTime.fromFormat(endCsvTime,CSV_DATE_FORMAT);
-    return Math.floor( end.diff(start,'minutes').toObject().minutes);
+function csvTimeDuration(startCsvTime, endCsvTime) {
+    var start = DateTime.fromFormat(startCsvTime, CSV_DATE_FORMAT);
+    var end = DateTime.fromFormat(endCsvTime, CSV_DATE_FORMAT);
+    return Math.floor(end.diff(start, 'minutes').toObject().minutes);
 }
 
 async function initDb() {
@@ -41,6 +41,8 @@ async function initDb() {
         },
     });
 }
+
+initDb();
 
 async function addRecord(storeName, data) {
     return new Promise(async (resolve, reject) => {
@@ -87,7 +89,7 @@ async function getRecord(storeName, key) {
     });
 }
 
-async function getAll(storeName){
+async function getAll(storeName) {
     return new Promise(async (resolve, reject) => {
         try {
             const tx = await db.transaction(storeName, 'readwrite');
@@ -102,14 +104,14 @@ async function getAll(storeName){
     });
 }
 
-async function deleteStore(storeName){
+async function deleteStore(storeName) {
     return new Promise(async (resolve, reject) => {
         try {
             const tx = await db.transaction(storeName, 'readwrite');
             const store = tx.objectStore(storeName);
             await store.clear();
             await tx.done;
-            console.log( "cleared store: "+storeName);
+            console.log("cleared store: " + storeName);
             resolve();
         } catch (err) {
             console.error(err);
@@ -118,21 +120,24 @@ async function deleteStore(storeName){
     });
 }
 
-async function clearDb(){
-    return new Promise( async (resolve, reject) => {
-        try{
-            var stores = [ 'meetings','meetingInstances','students','attendance'];
-            await async.eachSeries( stores, deleteStore, function(err){
-                if( err ) {
+async function clearDb() {
+    return new Promise(async (resolve, reject) => {
+        try {
+            var stores = ['meetings', 'meetingInstances', 'students', 'attendance'];
+            await async.eachSeries(stores, deleteStore, function (err) {
+                if (err) {
                     console.error(err);
                     reject(err);
                 }
                 resolve();
             });
-        }catch( err ) {
+        } catch (err) {
             console.error(err);
         }
     });
 
 }
 
+function navigate(url) {
+    window.location.href = url;
+}

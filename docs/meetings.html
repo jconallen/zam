@@ -67,7 +67,7 @@
                 if( !meeting.ignore ){
                     var id = meeting.meetingId.replace(/\s+/g, '');
                     var encodedMeetingUrl = "/meeting.html?meetingId="+encodeURIComponent(meeting.meetingId);
-                    var div = `<div class="row" style="padding:5px;"><a href="${encodedMeetingUrl}">${meeting.topic}</a></div>`;
+                    var div = `<div class="row rounded border w-50" style="padding:5px;margin:5px;" onclick="navigate('${encodedMeetingUrl}')">${meeting.topic}</div>`;
                     $('#meetingList').append(div);
                 }
             }

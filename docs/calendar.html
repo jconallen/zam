@@ -39,12 +39,13 @@
 
     <div class="container">
         <h1>Calendar</h1>
-        <div class="container">
-            <div id='calendar'></div>
+        <div class="w-75 container">
+            <div id="calendar" ></div>
         </div>
     </div>
 
     <!-- code -->
+    <script src="js/utils.js"></script>
 
     <script type="text/javascript">
 
@@ -52,9 +53,11 @@
             $("#navbar").load("navbar.html");
         });
 
+        var calendar;
+
         window.addEventListener("load", async (event) => {
             var calendarEl = document.getElementById('calendar');
-            var calendar = new FullCalendar.Calendar(calendarEl, {
+            calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth'
             });
             calendar.render();
@@ -65,6 +68,8 @@
 
             calendar.on('eventClick', function (info) {
                 console.log('Event on ' + JSON.stringify(info.event.extendedProps) );
+                var url = info.event.extendedProps.meetingInstanceUrl;
+                navigate(url);
             });
 
             calendar.on('eventMouseover', function (event) {
@@ -72,35 +77,43 @@
                 console.log('Mouse over on ' + JSON.stringify(info.event.extendedProps) );
             });
 
-            let myEvents = [
-                {
-                    title: "CS100-1803",
-                    allDay: false,
-                    start: "2025-10-02T18:30:00",
-                    end: "2025-10-02T20:30:00",
-                    "foo": "bar"
-                },
-                {
-                    title: "CS100-1802",
-                    start: "2025-10-02",
-                    end: "2025-10-02",
-                    "bar": "foo"
-                }
-            ]
-
-            myEvents.forEach(event => calendar.addEvent(event));
-
-//             eventMouseover: function(event, jsEvent, view) {
-//     $('.fc-event-inner', this).append('<div id=\"'+event.id+'\" class=\"hover-end\">'+$.fullCalendar.formatDate(event.end, 'h:mmt')+'</div>');
-// }
-
-// eventMouseout: function(event, jsEvent, view) {
-//     $('#'+event.id).remove();
-// }
+            populateEvents();
 
         });
 
+        async function addEvent(instance) {
+            try{
+                var meeting = await getRecord('meetings', instance.meetingId );
+                var dtStart = DateTime.fromFormat(instance.start, CSV_DATE_FORMAT);
+                var startDateSimple = dtStart.toLocaleString(DateTime.DATE_SHORT);
+                var dtEnd = DateTime.fromFormat(instance.end, CSV_DATE_FORMAT);
+                var parsedEnd = parseDateString(instance.end);
+                var meetingInstanceUrl = "meetingInstance.html?meetingId="+encodeURIComponent(instance.meetingId)+"&startDate="+encodeURIComponent(startDateSimple);
+                var event = {
+                    "title": meeting.topic,
+                    "allDay": false,
+                    "start": dtStart.toISO(),
+                    "end": dtEnd.toISO(),
+                    "meetingInstanceUrl": meetingInstanceUrl
+                }
+                calendar.addEvent(event);
+            } catch(err){ 
+                console.error( err );
+            }
 
+        }
+
+        async function populateEvents(){
+
+            try{
+                var meetingInstances = await getAll('meetingInstances');
+                    async.eachSeries(meetingInstances, addEvent, (err) => {
+                    if (err) console.error(err);
+                });
+            } catch(err ) {
+                console.error( err );
+            }
+        }
 
     </script>
 </body>

@@ -46,7 +46,7 @@
         });
         
         window.addEventListener("load", async (event) => {
-            await initDb();
+            // await initDb();
 
             const queryString = window.location.search; 
             const urlParams = new URLSearchParams(queryString);
@@ -105,7 +105,10 @@
 
                             var attendanceRecordCount = Object.keys(attendanceeRecords).length;
 
-                            $('#meetingInstanceList').append( `<div class="row"><a href="meetingInstance.html?meetingId=${encodeURIComponent(instance.meetingId)}&startDate=${startDateSimple}">${startDateWeekday}; ${startTimeSimple} -> ${endTimeSimple}, ${duration}m with ${attendanceRecordCount} participants</a></div></div>` );
+                            var url = `meetingInstance.html?meetingId=${encodeURIComponent(instance.meetingId)}&startDate=${startDateSimple}`;
+
+                            $('#meetingInstanceList').append( 
+                                `<div class="row rounded border" style="padding:5px;margin:5px;" onclick="navigate('${url}')">${startDateWeekday}, ${startTimeSimple} to ${endTimeSimple}, ${duration} mins with ${attendanceRecordCount} participants</a></div></div>` );
 
                         }
 
@@ -118,6 +121,8 @@
                 console.log( err );
             }
         }
+
+
 
 
 
