@@ -23,7 +23,7 @@
         crossorigin="anonymous"></script>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-    
+
     <link rel="shortcut icon" type="image/x-icon" href="favicon.ico?">
 
 </head>
@@ -36,49 +36,98 @@
 
         <div class="container">
             <p>
-                This HTML, 100% JavaScript application organizes the information in dowloaded Zoom Attendance reports.  If your account has sufficient priviledges you can download a meeting usage report that includes information on all participants to meetings instances.  This Zoom support article describes <a href="https://support.zoom.com/hc/en/article?id=zm_kb&sysparm_article=KB0065639#h_01FG1XQ34B3AZXAD61JYSR99TE" target="_blank">How to access and generate a meeting usage report</a>.
+                This HTML, 100% JavaScript application organizes the information in dowloaded Zoom Attendance reports.
+                If your account has sufficient priviledges you can download a meeting usage report that includes
+                information on all participants to meetings instances. This Zoom support article describes <a
+                    href="https://support.zoom.com/hc/en/article?id=zm_kb&sysparm_article=KB0065639#h_01FG1XQ34B3AZXAD61JYSR99TE"
+                    target="_blank">How to access and generate a meeting usage report</a>.
             </p>
 
             <p>
-                Tbhis application was written for a very specific purpose.  To help online instructors manage the attendnace records of students in regular meeting calls.  It is base onthe assumption that an instructor has set up one or more recurring meetings in Zoom for class instruction.  Over the course of the semester it might be interesting knowing how well individual students have been participating.  To find this information from the downloaded spreadheets you'd have to combine monthly sheets, and sort through them based on student, then compare that with the total room time that the host had teh meetin open for.  This can be a bit cumbersome, so I decided to write this simple app to do this for me.
+                This application was written for a very specific purpose; to help online instructors manage the
+                attendnace records of students in regular meeting calls. It is base onthe assumption that an instructor
+                has set up one or more recurring meetings in Zoom for class instruction. Over the course of the semester
+                it might be interesting knowing how well individual students have been participating. To find this
+                information from the downloaded spreadheets you'd have to combine monthly sheets, and sort through them
+                based on student, then compare that with the total room time that the host had teh meetin open for. This
+                can be a bit cumbersome, so I decided to write this simple app to do this for me.
             </p>
             <p>
-                The way it works is; you download the attendance reports from your Zoom web portal.  This information contains each record of someone joining and leaving a meeting.  There may me several records for the student (and host) during the same meeting if breakout rooms are used.  The app allows you to upload the spreadhseets downloaded from the Zoom portal and reads the data and organized it in to three primary views; student, meeting instance and calendar.  See the feature descriptions below for details.
+                The way it works is; you download the attendance reports from your Zoom web portal. This information
+                contains each record of someone joining and leaving a meeting. There may me several records for the
+                student (and host) during the same meeting if breakout rooms are used. The app allows you to upload the
+                spreadhseets downloaded from the Zoom portal and reads the data and organized it in to three primary
+                views; student, meeting instance and calendar. See the feature descriptions below for details.
             </p>
+
+            <img src="images/StudentView.png" class="img-fluid" alt="Screenshot of Student View ">
 
             <p>
-                This application is written in 100% JavaScript and runs in your browser.  It does not run on a server, and more importantly the data does not travel over the network. It uses your bowsers local storage capabilities to store the processed data locally so that it will be there the next time you navigate to the app.  The downside is that you must use the same browser on the same machine to see the data after you close your browser.  If you use a different browser or computer you will have to upload teh data again.
+                This application is written in 100% JavaScript and runs in your browser. It does not run on a server,
+                and more importantly the data does not travel over the network. It uses your bowsers local storage
+                capabilities to store the processed data locally so that it will be there the next time you navigate to
+                the app. The downside is that you must use the same browser on the same machine to see the data after
+                you close your browser. If you use a different browser or computer you will have to upload teh data
+                again.
             </p>
 
-                <h2>Quick Start</h2>
-                <ol>
-                    <li>Download all the Zoom usage report CSV files that you want to manage.  
-                        <ol>
-                            <li>Navigate to the <a href="https://zoom.us/signin" target="_blank">Zoom web portal</a> and sign in.</li>
-                            <li>Select <b>Analytics & Reports > Meetings & Webinars</b> from the side menu.</li>
-                            <li>Select <b>Meeting and webinar history</b>.</li>
-                            <li>Set the date range you want to download the reports for (you are limited to at most one month's time).  Press <b>Search</b>.</li>
-                            <li>Use the <b>Export</b> dropdown button abd select <b>Export the list with participants details</b>.  The file will be download to your computer, take note of where the file was downloaded.</li>
 
-                        </ol>     
-                    <li>Use the navigation bar of this application and select <b>Attendance Data.</b></li>
-                    <li>Use the <b>Browse...</b> button on the File upload field and select from your computer the downloaded CSV report files.   </li>
-                    <li>Some of the meetings (e.g., personal one-on-one meetings) you may not want to manage with this application.  To ignore these meetings, click on the eye icon to make them ignored in the rest of this application.</li>
-                </ol>
+            <h2>Quick Start</h2>
+            <ol>
+                <li>Download all the Zoom usage report CSV files that you want to manage.
+                    <ol>
+                        <li>Navigate to the <a href="https://zoom.us/signin" target="_blank">Zoom web portal</a> and
+                            sign in.</li>
+                        <li>Select <b>Analytics & Reports > Meetings & Webinars</b> from the side menu.</li>
+                        <li>Select <b>Meeting and webinar history</b>.</li>
+                        <li>Set the date range you want to download the reports for (you are limited to at most one
+                            month's time). Press <b>Search</b>.</li>
+                        <li>Use the <b>Export</b> dropdown button abd select <b>Export the list with participants
+                                details</b>. The file will be download to your computer, take note of where the file was
+                            downloaded.</li>
 
-                <h2>Features</h2>
+                    </ol>
+                <li>Use the navigation bar of this application and select <b>Attendance Data.</b></li>
+                <li>Use the <b>Browse...</b> button on the File upload field and select from your computer the
+                    downloaded CSV report files. </li>
+                <li>Some of the meetings (e.g., personal one-on-one meetings) you may not want to manage with this
+                    application. To ignore these meetings, click on the eye icon to make them ignored in the rest of
+                    this application.</li>
+            </ol>
 
-                <p><b><a href="students.html">Students menu</a></b> - Lists all students that have an attendance record.  Clicking on the student will show the details of all the attendance records for this student.  This information includes the attended meeting, the time they entered and left.  Multiple records for the same meeting instance indicates they either left and returned to the meeting, or more likely they used a "breakout" room.</p>
+            <h2>Features</h2>
 
-                <p><b><a href="meetings.html">Meetings menu</a></b> - List all the meeting (not explicitly ignored when you imported the data.  Clicking on on of these recurring meetings will display a list of all its instances.  The day, date and times along with the duration and number of participants is shown.  Clicking on an instance will display a view of all the participants with enter and exit times.  Multiple instances of entery and exit time periods indicates the use of a breakout room, or simply leaving and reentring the meeting instance.  A grapnhical representation of the time spent in the meeting accompanies each attendance record to give a quick view of when they were present over the course of the meeting instance..</p>
+            <p><b><a href="students.html">Students menu</a></b> - Lists all students that have an attendance record.
+                Clicking on the student will show the details of all the attendance records for this student. This
+                information includes the attended meeting, the time they entered and left. Multiple records for the same
+                meeting instance indicates they either left and returned to the meeting, or more likely they used a
+                "breakout" room.</p>
 
-                <p><b><a href="calendar.html">Calendar menu</a></b> - Displays a monthly calendar view with meeting instances.  Clicking on the meeting instance in a date cell will open up the meeting instance view.  This view contains the participants enter and exit times with a small graphical visual indicating when they entered and left.  The use of breakout rooms are shown with separate attendance records.</p>
+            <p><b><a href="meetings.html">Meetings menu</a></b> - List all the meeting (not explicitly ignored when you
+                imported the data. Clicking on on of these recurring meetings will display a list of all its instances.
+                The day, date and times along with the duration and number of participants is shown. Clicking on an
+                instance will display a view of all the participants with enter and exit times. Multiple instances of
+                entery and exit time periods indicates the use of a breakout room, or simply leaving and reentring the
+                meeting instance. A grapnhical representation of the time spent in the meeting accompanies each
+                attendance record to give a quick view of when they were present over the course of the meeting
+                instance..</p>
 
-                <h2>Support</h2>
+            <p><b><a href="calendar.html">Calendar menu</a></b> - Displays a monthly calendar view with meeting
+                instances. Clicking on the meeting instance in a date cell will open up the meeting instance view. This
+                view contains the participants enter and exit times with a small graphical visual indicating when they
+                entered and left. The use of breakout rooms are shown with separate attendance records.</p>
 
-                <p>This project was created for my own personal use, so I can't promise any support.  I will try to do my best to see that it remains working for as long as I can.  This is an open source project <a href="https://github.com/jconallen/zam" target="_blank">hosted on GitHub</a> with the <a href="https://github.com/jconallen/zam/blob/main/LICENSE" target="_blank">MIT license</a>.  If you have an issue you can use the <a href="https://github.com/jconallen/zam/issues" target="_blank">GitHub issues system</a> to register an issue or enhancement request. But unfortunately I can't offer any garuantees</p>
+            <h2>Support</h2>
 
-                
+            <p>This project was created for my own personal use, so I can't promise any support. I will try to do my
+                best to see that it remains working for as long as I can. This is an open source project <a
+                    href="https://github.com/jconallen/zam" target="_blank">hosted on GitHub</a> with the <a
+                    href="https://github.com/jconallen/zam/blob/main/LICENSE" target="_blank">MIT license</a>. If you
+                have an issue you can use the <a href="https://github.com/jconallen/zam/issues" target="_blank">GitHub
+                    issues system</a> to register an issue or enhancement request. But unfortunately I can't offer any
+                garuantees</p>
+
+
             </p>
 
         </div>
