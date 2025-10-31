@@ -35,6 +35,18 @@
         <div class="container">
             <p>
                 This HTML, 100% JavaScript application organizes the information in dowloaded Zoom Attendance reports.  If your account has sufficient priviledges you can download a meeting usage report that includes information on all participants to meetings instances.  This Zoom support article describes <a href="https://support.zoom.com/hc/en/article?id=zm_kb&sysparm_article=KB0065639#h_01FG1XQ34B3AZXAD61JYSR99TE" target="_blank">How to access and generate a meeting usage report</a>.
+            </p>
+
+            <p>
+                Tbhis application was written for a very specific purpose.  To help online instructors manage the attendnace records of students in regular meeting calls.  It is base onthe assumption that an instructor has set up one or more recurring meetings in Zoom for class instruction.  Over the course of the semester it might be interesting knowing how well individual students have been participating.  To find this information from the downloaded spreadheets you'd have to combine monthly sheets, and sort through them based on student, then compare that with the total room time that the host had teh meetin open for.  This can be a bit cumbersome, so I decided to write this simple app to do this for me.
+            </p>
+            <p>
+                The way it works is; you download the attendance reports from your Zoom web portal.  This information contains each record of someone joining and leaving a meeting.  There may me several records for the student (and host) during the same meeting if breakout rooms are used.  The app allows you to upload the spreadhseets downloaded from the Zoom portal and reads the data and organized it in to three primary views; student, meeting instance and calendar.  See the feature descriptions below for details.
+            </p>
+
+            <p>
+                This application is written in 100% JavaScript and runs in your browser.  It does not run on a server, and more importantly the data does not travel over the network. It uses your bowsers local storage capabilities to store the processed data locally so that it will be there the next time you navigate to the app.  The downside is that you must use the same browser on the same machine to see the data after you close your browser.  If you use a different browser or computer you will have to upload teh data again.
+            </p>
 
                 <h2>Quick Start</h2>
                 <ol>
@@ -62,7 +74,7 @@
 
                 <h2>Support</h2>
 
-                <p>This project was created for my own personal use, so I can't promise any support.  I will try to do my best to see that is remains working for as long as I can.  This is an open source project <a href="https://github.com/jconallen/zam" target="_blank">hosted on GitHub</a> with the <a href="https://github.com/jconallen/zam/blob/main/LICENSE" target="_blank">MIT license</a>.  If you have an issue you can use the <a href="https://github.com/jconallen/zam/issues" target="_blank">GitHub issues system</a> to register an issue or enhancement request. </p>
+                <p>This project was created for my own personal use, so I can't promise any support.  I will try to do my best to see that it remains working for as long as I can.  This is an open source project <a href="https://github.com/jconallen/zam" target="_blank">hosted on GitHub</a> with the <a href="https://github.com/jconallen/zam/blob/main/LICENSE" target="_blank">MIT license</a>.  If you have an issue you can use the <a href="https://github.com/jconallen/zam/issues" target="_blank">GitHub issues system</a> to register an issue or enhancement request. But unfortunately I can't offer any garuantees</p>
 
                 
             </p>
