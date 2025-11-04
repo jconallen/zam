@@ -5,3 +5,6 @@ Zoom Attendance Manager is a simple 100% browser Javascript application to help 
 This application uses the Indexed DB feature of the web browser (only tested with Firefox and Chrome) to store data locally across sessions.  
 
 You can preview this client aide application here: [https://jconallen.github.io/zam/](https://jconallen.github.io/zam/).
+
+I've also added some [anonomized test data](https://github.com/jconallen/zam/tree/main/test_data) if you don't have any suitable data of your own to use yet.
+
