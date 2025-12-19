@@ -77,7 +77,8 @@
                 console.log('Mouse over on ' + JSON.stringify(info.event.extendedProps) );
             });
 
-            console.log( "about to pop events")
+            console.log( "about to pop events");
+            db = await initDb();
             await populateEvents();
 
         });

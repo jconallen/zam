@@ -40,6 +40,7 @@ async function initDb() {
             // instanceStore.createIndex('meetingId', 'meetingId', { unique: true });
         },
     });
+    return db;
 }
 
 initDb();
