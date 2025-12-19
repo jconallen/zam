@@ -108,7 +108,7 @@
         async function populateEvents(){
 
             try{
-                console.log( "populating events");
+                console.log( "populating events db: " + db );
                 var meetingInstances = await getAll('meetingInstances');
                     async.eachSeries(meetingInstances, addEvent, (err) => {
                     if (err) console.error(err);
