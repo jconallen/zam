@@ -24,6 +24,7 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
 
+    <link rel="shortcut icon" type="image/x-icon" href="./favicon.ico">
 </head>
 
 <body>
@@ -51,7 +52,8 @@
             const queryString = window.location.search; 
             const urlParams = new URLSearchParams(queryString);
             const meetingId = urlParams.get('meetingId'); 
-            buildMeetingDetailsDiv(meetingId);
+            db = await initDb();
+            await buildMeetingDetailsDiv(meetingId);
         });
 
         function sortInstances(instances){
