@@ -160,9 +160,11 @@
                 var dtJoined = DateTime.fromFormat(attendance.joined, CSV_DATE_FORMAT);
                 var joinDateShort = dtJoined.toLocaleString(DateTime.DATE_SHORT);
                 if ( !mtgInstance.includes(meetingInstanceStartDateShort)) {
-                    var meetingDuration = meeting.duration;
+                    
+                    var meetingUrl = `/meetingInstance.html?meetingId=${encodeURI(meetingId)}&startDate=${meetingId,attendanceStartDateShort}`;
+                    console.log( meetingUrl);
                     // ${joinDateShort} - ${meeting.topic} (${meetingInstanceStartSimple} -> ${meetingInstanceEndSimple})
-                    var div = `<div class="row" style="padding-top:10px;">${joinDateShort} - ${meeting.topic} (${meetingInstanceStartSimple} -> ${meetingInstanceEndSimple})</div>`;
+                    var div = `<div class="row" style="padding-top:10px;"><a href="${meetingUrl}">${joinDateShort} - ${meeting.topic} (${meetingInstanceStartSimple} -> ${meetingInstanceEndSimple})</a></div>`;
                     $('#attendanceRecords').append(div);
                     mtgInstance.push(meetingInstanceStartDateShort);
                 }
