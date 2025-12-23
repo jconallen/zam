@@ -87,19 +87,23 @@
             try{
                 console.log( "adding event" );
                 var meeting = await getRecord('meetings', instance.meetingId );
-                var dtStart = DateTime.fromFormat(instance.start, CSV_DATE_FORMAT);
-                var startDateSimple = dtStart.toLocaleString(DateTime.DATE_SHORT);
-                var dtEnd = DateTime.fromFormat(instance.end, CSV_DATE_FORMAT);
-                var parsedEnd = parseDateString(instance.end);
-                var meetingInstanceUrl = "meetingInstance.html?meetingId="+encodeURIComponent(instance.meetingId)+"&startDate="+encodeURIComponent(startDateSimple);
-                var event = {
-                    "title": meeting.topic,
-                    "allDay": false,
-                    "start": dtStart.toISO(),
-                    "end": dtEnd.toISO(),
-                    "meetingInstanceUrl": meetingInstanceUrl
+                if( !meeting.ignore ){
+                    var dtStart = DateTime.fromFormat(instance.start, CSV_DATE_FORMAT);
+                    var startDateSimple = dtStart.toLocaleString(DateTime.DATE_SHORT);
+                    var dtEnd = DateTime.fromFormat(instance.end, CSV_DATE_FORMAT);
+                    var parsedEnd = parseDateString(instance.end);
+                    var meetingInstanceUrl = "meetingInstance.html?meetingId="+encodeURIComponent(instance.meetingId)+"&startDate="+encodeURIComponent(startDateSimple);
+                    var event = {
+                        "title": meeting.topic,
+                        "allDay": false,
+                        "start": dtStart.toISO(),
+                        "end": dtEnd.toISO(),
+                        "meetingInstanceUrl": meetingInstanceUrl
+                    }
+                    calendar.addEvent(event);
+                } else {
+                    console.log( 'ignoring meeting');
                 }
-                calendar.addEvent(event);
             } catch(err){ 
                 console.error( err );
             }
